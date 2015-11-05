@@ -1,22 +1,5 @@
 'use strict';
 
-//let log   = console.log
-//  , loge  = console.error
-//  , terminate = function terminate(xit, msgs) {
-//    let log = xit != 0 ? console.error : console.log
-//    
-//    if ( u.isArray(msgs) )
-//      msgs.forEach(function (e,i,a){ log(msgs[i]) })
-//    if ( u.isString(msgs) )
-//      log(msgs)
-//    if ( !msgs ) {
-//      log("WTF is msgs supposed to be? xit =", xit)
-//      exit(1)
-//    }
-//
-//    exit(xit)
-//  }
-
 let fs             = require('fs')
   , path           = require('path')
   , express        = require('express')
