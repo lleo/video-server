@@ -8,23 +8,6 @@ var app = require('../app');
 var debug = require('debug')('video-server:server');
 var http = require('http');
 
-//let log   = console.log
-//  , loge  = console.error
-//  , terminate = function terminate(xit, msgs) {
-//    let log = xit != 0 ? console.error : console.log
-//    
-//    if ( u.isArray(msgs) )
-//      msgs.forEach(function (e,i,a){ log(msgs[i]) })
-//    if ( u.isString(msgs) )
-//      log(msgs)
-//    if ( !msgs ) {
-//      log("WTF is msgs supposed to be? xit =", xit)
-//      exit(1)
-//    }
-//
-//    exit(xit)
-//  }
-
 /**
  * Get port from environment and store in Express.
  */
