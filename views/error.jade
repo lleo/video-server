@@ -1,0 +1,10 @@
+doctype html
+html
+  head
+    title There was an Error
+  body
+    textarea(rows=10 cols=80).
+      #{message}
+    p
+      code.
+        #{JSON.stringify(error)}
