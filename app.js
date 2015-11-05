@@ -1,6 +1,7 @@
 'use strict';
 
-let fs             = require('fs')
+let debuglog       = require('debug')
+  , fs             = require('fs')
   , path           = require('path')
   , express        = require('express')
   , favicon        = require('serve-favicon')
@@ -13,6 +14,9 @@ let fs             = require('fs')
 //  , errorHandler   = require('errorhandler')
 
 let app = express()
+  , debug = debuglog('debug')
+
+console.log("HELLO app.js")
 
 /*
  * From: http://expressjs.com/guide/using-template-engines.html
@@ -26,30 +30,36 @@ app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'jade')
 app.set('title',"Sean Egan's Video File Server")
 let cfgfn = './video-server.json'
-  , cfg   = fs.readFileSync(cfgfn)
-app.set('config', cfg)
+  , cfg_json_str   = fs.readFileSync(cfgfn, 'utf8')
+  , cfg
+
+try {
+  cfg = JSON.parse(cfg_json_str)
+} catch (x) {
+  console.error("Faild to parse json data from %s", cfgfn)
+  console.error(cfg_json_str)
+  process.exit(1)
+}
+
+app.set('app config', cfg)
 
 // uncomment after placing your favicon in /public
 app.use(favicon(path.join(__dirname, 'static', 'img', 'favicon.ico')))
-//console.log("HERE 1")
 app.use(logger('dev'))
-//console.log("HERE 2")
 app.use(bodyParser.json())
-//console.log("HERE 3")
 app.use(bodyParser.urlencoded({ extended: false }))
-//console.log("HERE 4")
 app.use(cookieParser())
-//console.log("HERE 5")
 app.use(express.static(path.join(__dirname, 'static')))
-//console.log("HERE 6")
 
 let index  = require('./routes/index')
   , stream = require('./routes/stream')
   , lookup = require('./routes/lookup')
 
+debug("typeof lookup = ", typeof lookup)
+
 app.get('/', index)
 app.get('/stream/:video', stream)
-app.post('/lookup', lookup)
+//app.post('/lookup', lookup)
 
 // error handlers
 
@@ -60,7 +70,6 @@ app.use(function(req, res, next) {
   next(err)
 })
 
-//console.log("HERE 7")
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
@@ -73,7 +82,6 @@ if (app.get('env') === 'development') {
   })
 }
 
-//console.log("HERE 8")
 // production error handler
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
@@ -84,6 +92,5 @@ app.use(function(err, req, res, next) {
   })
 })
 
-//console.log("HERE 9")
 
 module.exports = app

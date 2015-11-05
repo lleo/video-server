@@ -5,7 +5,7 @@
  */
 
 var app = require('../app');
-var debug = require('debug')('video-server:server');
+var debug = require('debug')('debug');
 var http = require('http');
 
 /**
