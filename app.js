@@ -59,7 +59,7 @@ debug("typeof lookup = ", typeof lookup)
 
 app.get('/', index)
 app.get('/stream/:video', stream)
-//app.post('/lookup', lookup)
+app.get('/lookup', lookup)
 
 // error handlers
 

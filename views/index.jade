@@ -15,9 +15,13 @@ html
     //-script(src="//ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js", type="text/javascript")
     script(src="/js/jquery-2.1.4.js", type="text/javascript")
 
+    //- var alt_cfg_json_str = JSON.stringify(cfg)
+
     script(src="/js/video-app.js", type="text/javascript")
     script.
-      VIDEO_APP.init(#{cfg_json_str})
+      $(document).ready(function(){
+        VIDEO_APP.init(#{cfg_json_str})
+      })
 
   body
     h1= cfg.title
@@ -28,6 +32,11 @@ html
 
     textarea(rows=20 cols=80).
       #{cfg_json_str}
+
+    //-br
+    //-
+    //-textarea(rows=20 cols=80).
+    //-  #{alt_cfg_json_str}
 
     hr
 

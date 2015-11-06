@@ -1,24 +1,30 @@
 { "video directories" :
-  [ { "name" : "App Local",
-      "id"   : "appLocal",
+  { "App Local":
+    { "id"   : "appLocal",
       "fqdn" : "/Users/seanegan/prj/node/apps/express-video-server/videos"
     },
-    { "name" : "SSD Videos",
-      "id"   : "ssdVideos", 
+    "SSD Videos":
+    { "id"   : "ssdVideos", 
       "fqdn" : "/Users/seanegan/Movies"
     },
-    { "name" : "HDD Videos",
-      "id"   : "hddVideos",
+    "HDD Videos":
+    { "id"   : "hddVideos",
       "fqdn" : "/Volumes/HDD/Users/seanegan/Movies"
       },
-    { "name" : "Toshi Videos",
-      "id"   : "toshiVideos",
+    "Toshi Videos":
+    { "id"   : "toshiVideos",
       "fqdn" : "/Volumes/Toshi/Videos"
       },
-    { "name" : "Seagate Videos",
-      "id"   : "seagateVideos",
+    "Seagate Videos":
+    { "id"   : "seagateVideos",
       "fqdn" : "/Volumed/Seagate/Videos"
     }
-  ],
+  },
+  "order" : ["App Local",
+             "SSD Videos",
+             "HDD Videos",
+             "Toshi Videos",
+             "Seagate Videos"
+            ],
    "acceptable extentions" : ["mp4","m4v", "webm"]
 }
