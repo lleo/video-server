@@ -1,3 +1,27 @@
 .hide {
   display:none;
 }
+
+option.directory {
+  font-weight: bolder;
+}
+
+option.file {
+
+}
+
+select.fileselector {
+  height : 20em;
+/*  overflow-x: auto; */
+/*  overflow-y: auto; */
+}
+
+div.fileselector {
+  display: flex;
+}
+
+div.wrapSelect {
+  width     : 200px;
+  overflow-x: auto;
+  overflow-y: auto;
+}

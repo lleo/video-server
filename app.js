@@ -15,6 +15,7 @@ let debuglog       = require('debug')
 
 let app = express()
   , debug = debuglog('debug')
+  , u = require('lodash')
 
 console.log("HELLO app.js")
 
@@ -29,19 +30,30 @@ console.log("HELLO app.js")
 app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'jade')
 app.set('title',"Sean Egan's Video File Server")
+
 let cfgfn = './video-server.json'
-  , cfg_json_str   = fs.readFileSync(cfgfn, 'utf8')
-  , cfg
+  , orig_cfg_json_str   = fs.readFileSync(cfgfn, 'utf8')
+  , orig_cfg
 
 try {
-  cfg = JSON.parse(cfg_json_str)
+  orig_cfg = JSON.parse(orig_cfg_json_str)
 } catch (x) {
   console.error("Faild to parse json data from %s", cfgfn)
   console.error(cfg_json_str)
   process.exit(1)
 }
 
-app.set('app config', cfg)
+app.set('app config orig', orig_cfg)
+
+var cfg = {}
+cfg['video directories'] = {}
+cfg.order = []
+for (let ent of orig_cfg['video directories']) {
+  cfg['video directories'][ent.name] = { id: ent.id, fqdn: ent.fqdn }
+  cfg.order.push(ent.name)
+}
+cfg['acceptable extensions'] = u.clone(orig_cfg['acceptable extensions'])
+app.set('app config by name', cfg)
 
 // uncomment after placing your favicon in /public
 app.use(favicon(path.join(__dirname, 'static', 'img', 'favicon.ico')))

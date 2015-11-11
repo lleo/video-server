@@ -20,6 +20,7 @@ Promise.promisifyAll(fs)
  */
 function filterFilesByExt(files, exts) {
   'use strict';
+  console.log("lookup: filterFilesByExt: exts = %j", exts)
   return files.filter(function(fn) {
     for (let ext of exts)
       if (path.extname(fn).substr(1) == ext)
@@ -30,20 +31,22 @@ function filterFilesByExt(files, exts) {
 module.exports = function (req, res) {
   'use strict';
   
-  var cfg = req.app.get('app config')
+  var cfg = req.app.get('app config by name')
 
   console.log("lookup: cfg = ", cfg)
 
   var top = req.query.top
   var top_fqdn = cfg['video directories'][top].fqdn
-  var dirs = u.cloneDeep(req.query.dirs) || []
-  var exts = cfg['acceptable extentions']
-  
-  dirs.unshift(top_fqdn)
+  var subdirs = u.clone(req.query.subdirs) || []
+  var exts = cfg['acceptable extensions']
+  console.log("lookup: exts = %j", exts)
 
-  console.log("lookup: dirs = %j", dirs)
+  var localSubdirs = [top_fqdn].concat(subdirs)
+
+  console.log("lookup: localSubdirs = %j", localSubdirs)
+  console.log("lookup: subdirs = %j", subdirs)
   
-  var fqdn = path.join.apply(path, dirs)
+  var fqdn = path.join.apply(path, localSubdirs)
 
   console.log("lookup: fqdn = %j", fqdn)
   
@@ -60,7 +63,7 @@ module.exports = function (req, res) {
     })
   }).then(function(results) {
     var files = []
-      , dirs  = []
+      , dirs  = [] //list of directories found in fqdn
       , other = []
 
     results.forEach(function(result){
@@ -74,10 +77,11 @@ module.exports = function (req, res) {
 
     files = filterFilesByExt(files, exts)
     
-    var json = {
-      files: files,
-      dirs : dirs
-    }
+    var json = { top     : top
+               , subdirs : subdirs
+               , files   : files
+               , dirs    : dirs
+               }
       , json_str = JSON.stringify(json)
     
     console.log("lookup: sending json:\n"

@@ -4,20 +4,20 @@
  * GET app page.
  */
 
-var u = require('lodash')
 var util = require('util')
 
 module.exports = function(req, res){
   'use strict';
-  var app_cfg = u.cloneDeep(req.app.get('app config'))
+  var app_cfg = req.app.get('app config by name')
+
+  console.log("app_cfg =", util.inspect(app_cfg, {depth:null}))
+  
   var cfg = {}
   cfg['video directories'] = []
-
-  for (let i=0; i<app_cfg.order.length; i+=1) {
-    var name = app_cfg.order[i]
-    var ent = u.cloneDeep(app_cfg['video directories'][name])
-    delete ent.fqdn
+  for (let name of app_cfg.order) {
+    let ent = {}
     ent.name = name
+    ent.id   = app_cfg['video directories'][name].id
     cfg['video directories'].push(ent)
   }
 
