@@ -5,6 +5,7 @@
  */
 
 var util = require('util')
+var u = require('lodash')
 
 module.exports = function(req, res){
   'use strict';
@@ -13,20 +14,14 @@ module.exports = function(req, res){
   console.log("app_cfg =", util.inspect(app_cfg, {depth:null}))
   
   var cfg = {}
-  cfg['video directories'] = []
-  for (let name of app_cfg.order) {
-    let ent = {}
-    ent.name = name
-    ent.id   = app_cfg['video directories'][name].id
-    cfg['video directories'].push(ent)
-  }
+  cfg['video volumes'] = u.clone(app_cfg.order)
 
+  console.log('index: cfg["video volumes"] =', cfg['video volumes'])
   console.log("index: HERE NOW")
 
   cfg['title'] = req.app.get('title')
 
-  var str = util.inspect(cfg, {depth:null})
-  console.log("index: cfg = %j", { cfg: cfg, str: str })
+  console.log("index: cfg = %j", { cfg: cfg })
   
-  res.render('index', { pretty: true, cfg: cfg, cfg_json_str: str })
+  res.render('index', { pretty: true, cfg: cfg })
 };

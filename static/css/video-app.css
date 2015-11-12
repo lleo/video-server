@@ -10,18 +10,36 @@ option.file {
 
 }
 
-select.fileselector {
+div.volumeSelector {
+  display: flex;
+  width  : 100%;
   height : 20em;
-/*  overflow-x: auto; */
-/*  overflow-y: auto; */
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
-div.fileselector {
+select.volumeSelector {
+  width  : 100%;
+  height : 20em;
+}
+
+select.fileSelector {
+  height : 20em;
+  width  : inherit;
+}
+
+div.fileSelector {
   display: flex;
 }
 
 div.wrapSelect {
   width     : 200px;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+div.wrapVolumeSelect {
+  width     : 6em;
   overflow-x: auto;
   overflow-y: auto;
 }

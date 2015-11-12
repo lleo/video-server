@@ -49,7 +49,7 @@ var cfg = {}
 cfg['video directories'] = {}
 cfg.order = []
 for (let ent of orig_cfg['video directories']) {
-  cfg['video directories'][ent.name] = { id: ent.id, fqdn: ent.fqdn }
+  cfg['video directories'][ent.name] = { fqdn: ent.fqdn }
   cfg.order.push(ent.name)
 }
 cfg['acceptable extensions'] = u.clone(orig_cfg['acceptable extensions'])
