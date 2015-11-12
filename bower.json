@@ -1,0 +1,25 @@
+{
+  "name": "video-server",
+  "description": "single page app to select and play video",
+  "main": "app.js",
+  "authors": [
+    "LLeo"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/lleo/video-server",
+  "moduleType": [
+    "node"
+  ],
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.4",
+    "lodash": "~3.10.1"
+  }
+}
