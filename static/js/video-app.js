@@ -11,12 +11,15 @@
     
     this.ids = { div: 'volumeBrowserDiv'
                , select: 'volumeBrowserSelect'
+               , wrapDiv: 'volumeBrowserSelectWrapDiv'
                }
     
     this.volumeNames    = volumeNames
-    this.firstDirSelect = undefined
     this.selectedVolume = undefined
     this.subdirs        = []
+    this.dirSelects     = [] //should be dirSelects.length == subdirs.length + 1 
+    this.launchVideoContentButton = undefined
+    this.btnNum         = 0
     this.$dom = $(document.createElement('div'))
                 .attr('id', this.ids.div)
                 .addClass('volumeSelector')
@@ -35,29 +38,38 @@
     }
 
     this.$dom.append( $(document.createElement('div'))
+                      .attr('id', this.ids.wrapDiv)
                       .addClass('wrapVolumeSelect')
                       .append( $select )
                     )
     
     function selectChanged() {
       var val = $(this).val()
-
+      var i
+      var dirSelect
+      
       console.log('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
 
       self.selectedVolume = val
       
-      if (self.firstDirSelect) {
+      if (self.dirSelects.length > 0) {
         //reset the DOM
-        self.firstDirSelect.$dom.remove()
+        while (self.dirSelects.length > 0) {
+          self.dirSelects.pop().$dom.remove()
+        }
 
         //reset this object
-        self.firstDirSelect = undefined
         self.subdirs = []
+      }
+      if (self.launchVideoContentButton) {
+        self.launchVideoContentButton.$dom.remove()
+        self.launchVideoContentButton = undefined
+        self.btnNum = 0
       }
 
       function lookupSuccess(data) {
         console.log('VolumeBrowser: selectChanged: lookupSuccess: data =', data)
-        self.addFirstDirSelect(data.dirs, data.files )
+        self.addDirSelect(data.dirs, data.files)
       }
 
       $.ajax({ url  : 'lookup'
@@ -72,18 +84,101 @@
     
     $select.change( selectChanged )
   }
-  VolumeBrowser.prototype.addFirstDirSelect =
-    function VolumeBrowser__addFirstDirSelect(dirs, files) {
-      console.log('VolumeBrowser__addFirstDirSelect: called')
-      console.log('VolumeBrowser__addFirstDirSelect: dirs =', dirs)
-      console.log('VolumeBrowser__addFirstDirSelect: files =', files)
 
-      var size   = dirs.length + files.length
+  VolumeBrowser.prototype.addDirSelect =
+    function VolumeBrowser__addDirSelect(dirs, files) {
+      console.log('VolumeBrowser__addDirSelect: called')
+      console.log('VolumeBrowser__addDirSelect: dirs =', dirs)
+      console.log('VolumeBrowser__addDirSelect: files =', files)
 
-      this.firstDirSelect = new DirSelect(0, dirs, files, this)
-      this.$dom.append( this.firstDirSelect.$dom )
-    }
+      var nextNum = this.dirSelects.length
 
+      var dirSelect = new DirSelect(nextNum, dirs, files, this)
+
+      this.dirSelects.push( dirSelect )
+
+      this.$dom.append( dirSelect.$dom )
+
+      /* 
+       * REACT to this dirSelect being selected
+       */
+      // capture the number of dirSelect currently
+      var numDirSelects = this.dirSelects.length
+      var self = this
+      function dirSelectChanged() {
+        var val = $(this).val()
+        var i
+
+        console.log('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
+
+        //if the captured number of DirSelects < the current number of DirSelects
+        if (numDirSelects < self.dirSelects.length) {
+          //remove the newer ones in reverse order
+          while (self.dirSelects.length > numDirSelects) {
+            self.dirSelects.pop().$dom.remove()
+          }
+
+          //truncate VolumeBroswer's subdirs array
+          self.subdirs.length = numDirSelects-1
+        }
+        if (self.launchVideoContentButton) {
+          self.launchVideoContentButton.$dom.remove()
+          self.launchVideoContentButton = undefined
+          self.btnNum = 0
+        }
+
+        //if val is one of the directory entries directory
+        if ( dirs.some(function(e,i,a) { return e == val }) ) {
+          self.subdirs.push(val)
+
+          function lookupSuccess(data) {
+            console.log('VolumeBrowser__addDirSelect: disSelectChanged: lookupSuccess; data = ', data)
+            self.addDirSelect(data.dirs, data.files)
+          }
+
+          $.ajax({ url     : 'lookup'
+                 , type    : 'GET'
+                 , data    : { top     : self.selectedVolume
+                             , subdirs : self.subdirs
+                             }
+                 , success : lookupSuccess
+                 })
+        }
+        else if ( files.some(function(e,i,a) { return e == val }) ) {
+          self.fileSelected(val)
+        }
+        else {
+          //WTF!!!
+          var errmsg = 'selected val='
+                     + JSON.stringify(val)
+                     + ' is neither in dirs[] nor files[]'
+          console.error(errmsg)
+          throw new Error(errmsg)
+        }
+
+        return
+      } //end: dirSelectChanged()
+      
+      $( '#'+dirSelect.ids.select ).change( dirSelectChanged )
+    } //end: VolumeBrowser__addDirSelect()
+
+  VolumeBrowser.prototype.fileSelected =
+    function VolumeBrowser__fileSelected(file) {
+      console.log('VolumeBrowser__fileSelected: fqfn:'
+                 + '"' + this.selectedVolume + '"/'
+                 + this.subdirs.join('/')
+                 + '/'
+                 + file
+                 )
+      //add launchVideoContentButton
+      this.launchVideoContentButton = new LaunchVideoContentButton(
+        this.btnNum, this.selectedVolume, this.subdirs, file, this )
+
+      this.btnNum += 1
+
+      this.$dom.after( this.launchVideoContentButton.$dom )
+      
+    } //end: VolumeBrowser__fileSelected()
 
   function DirSelect(dirNum, dirs, files, volumeBrowser) {
     this.dirNum        = dirNum
@@ -94,116 +189,84 @@
 
     var size = dirs.length + files.length
     
-    this.ids = { wrapDiv: 'dirWrapDiv-'+dirNum
+    this.ids = { div    : 'fileSelectorDiv-'+dirNum
+               , wrapDiv: 'dirWrapDiv-'+dirNum
                , select : 'dirSelect-'+dirNum
-               , nextDiv: 'dirNextDiv-'+dirNum
                }
 
     this.$dom = $(document.createElement('div'))
-                .attr('id', this.ids.wrapDiv)
+                .attr('id', this.ids.div)
                 .addClass('fileSelector')
 
-    var $select = $(document.createElement('select'))
-                  .attr('id', this.ids.select)
-                  .attr('size', size)
-                  .addClass('fileSelector')
-
+    var $select
     var i
-    for (i=0; i<dirs.length; i+=1) {
-      $select.append( $(document.createElement('option'))
-                      .attr('value', dirs[i])
-                      .addClass('directory')
-                      .append( dirs[i]+'/' )
-                    )
+    if ( size > 0) {
+      $select = $(document.createElement('select'))
+                .attr('id', this.ids.select)
+                .attr('size', size<2 ? 2 : size)
+                .addClass('fileSelector')
+
+      for (i=0; i<dirs.length; i+=1) {
+        $select.append( $(document.createElement('option'))
+                        .attr('value', dirs[i])
+                        .addClass('directory')
+                        .append( dirs[i]+'/' )
+                      )
+      }
+      for (i=0; i<files.length; i+=1) {
+        $select.append( $(document.createElement('option'))
+                        .attr('value', files[i])
+                        .addClass('file')
+                        .append( files[i] )
+                      )
+      }
+
+      this.$dom.append( $(document.createElement('div'))
+                        .attr('id', this.ids.wrapDiv)
+                        .addClass('wrapSelect')
+                        .append($select)
+                      )
     }
-    for (i=0; i<files.length; i+=1) {
-      $select.append( $(document.createElement('option'))
-                      .attr('value', files[i])
-                      .addClass('file')
-                      .append( files[i] )
-                    )
+    else {
+      this.$dom.append( $( document.createElement('span') )
+                        .addClass('notice')
+                        .append('Empty')
+                      )
     }
 
-    this.$dom.append( $(document.createElement('div'))
-                      .addClass('wrapSelect')
-                      .append( $select )
-                    )
-
-    var self = this
-    function selectChanged() {
-      var val = $(this).val()
-
-      console.log('DirSelect: selectChanged: val='+JSON.stringify(val))
-      
-      if (self.nextDirSelect) {
-        //reset the DOM
-        self.nextDirSelect.$dom.remove()
-
-        //reset this Object
-        self.nextDirSelect = undefined
-
-        //reset volumeBrowser
-        self.volumeBrowser.subdirs.length = self.dirNum
-      }
-
-      //if a directory was selected
-      if ( dirs.some(function(e,i,a) { return e == val }) ) {
-        self.volumeBrowser.subdirs.push(val)
-
-        function lookupSuccess(data) {
-          console.log('DirSelect: selectChanged: lookupSuccess: data =', data)
-          self.addDirSelect(data.dirs, data.files)
-        }
-
-        $.ajax({ url  : 'lookup'
-               , type : 'GET'
-               , data : { top    : self.volumeBrowser.selectedVolume
-                        , subdirs: self.volumeBrowser.subdirs
-                        }
-               , success : lookupSuccess
-               })
-      }
-      else if ( files.some(function(e,i,a) { return e == val }) ) {
-        self.fileSelected(val)
-      }
-      else {
-        //WTF!!!
-        var errormsg = 'selected val='
-                     +JSON.stringify(val)
-                     +' neither in dirs nor files'
-        console.error(errormsg)
-        throw new Exception(errmsg)
-      }
-      return
-    } //end: selectChanged()
-    
-    $select.change( selectChanged )
   } //DirSelect()
 
-  DirSelect.prototype.addDirSelect =
-    function DirSelect__addDirSelect(dirs, files) {
-      console.log('DirSelect__addDirSelect: called')
-      console.log('DirSelect__addDirSelect: dirs =', dirs)
-      console.log('DirSelect__addDirSelect: files =', files)
+  function LaunchVideoContentButton( btnNum
+                                   , volume
+                                   , subdirs
+                                   , file
+                                   , volumeBrowser) {
+    this.btnNum  = btnNum
+    this.volume  = volume
+    this.subdirs = _.clone(subdirs)
+    this.file    = file
+    this.volumeBrowser = volumeBrowser
+    this.id = 'launchBtn-'+btnNum
+    
 
-      //var size = dirs.length + files.length
+    this.$dom = $( document.createElement('button') )
+                .attr('type', 'button')
+                .attr('id', this.id)
+                .attr('value', file)
+                .addClass('fileButton')
+                .append(file)
 
-      this.nextDirSelect = new DirSelect(this.dirNum+1, dirs, files,
-                                         this.volumeBrowser)
-
-      this.$dom.append( this.nextDirSelect.$dom )
-      
-    }
-
-  DirSelect.prototype.fileSelected = function DirSelect__fileSlected(file) {
-    console.log('DirSelect__fileSelected: fqfn:'
-               + '"' + this.volumeBrowser.selectedVolume + '"/'
-               + this.volumeBrowser.subdirs.join('/')+'/'
-               + file
-               )
+    this.$dom.click(function(e){
+      console.log(this.id+" clicked!")
+      alert(this.id+" Clicked!")
+    })
 
   }
 
+  function VideoContent(vidNum, volume, subdirs, file, volumeBrowser) {
+    
+  }
+  
   var VIDEO_APP = {
     "init" : function VIDEO_APP_init(cfg) {
       
@@ -211,6 +274,8 @@
 
       var volumeBrowser = new VolumeBrowser(cfg['video volumes'])
       $('#fileSelect').append( volumeBrowser.$dom )
+
+      VIDEO_APP.volumeBrowser = volumeBrowser
       
       return
     }

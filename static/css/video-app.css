@@ -10,36 +10,56 @@ option.file {
 
 }
 
+span.notice {
+  align: center;
+}
+
+button.fileButton {
+  margin-top   : 10px;
+  margin-left  : auto;
+  margin-right : auto;
+  margin-bottom: auto;
+}
+
+button.fileButton::before {
+  content : "Launch: ";
+}
+
 div.volumeSelector {
-  display: flex;
-  width  : 100%;
-  height : 20em;
+  display   : flex;
+/*  float     : left; */
+  height    : 220px;
+  overflow-x: scroll;
+  overflow-y: auto;
+}
+
+div.wrapVolumeSelect {
+/*  float     : left; */
+  height    : 220px;
+  width     : 100px;
+  min-width : 100px;
   overflow-x: auto;
   overflow-y: auto;
 }
 
 select.volumeSelector {
-  width  : 100%;
-  height : 20em;
-}
-
-select.fileSelector {
-  height : 20em;
-  width  : inherit;
+  min-width  : 100%;
+  min-height : 220px;
 }
 
 div.fileSelector {
-  display: flex;
+/*  float     : left; */
+  width     : 180px;
+  min-width : 180px;
 }
 
 div.wrapSelect {
-  width     : 200px;
   overflow-x: auto;
   overflow-y: auto;
 }
 
-div.wrapVolumeSelect {
-  width     : 6em;
-  overflow-x: auto;
-  overflow-y: auto;
+select.fileSelector {
+  height    : 220px;
+  min-width : 180px;
 }
+
