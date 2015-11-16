@@ -4,11 +4,191 @@
  */
 (function(root, undefined) {
 
-  function VolumeBrowser(volumeNames) {
+  function VideoApp(cfg) {
+    this.volumeBrowser = new VolumeBrowser(cfg['video volumes'], this)
+
+    $('#fileSelect').append( this.volumeBrowser.$dom )
+
+    this.videoContents = []
+    this.videoControls = undefined
+  }
+
+  VideoApp.prototype.addVideoContent =
+    function VideoApp__addVideoContent(vidNum, volume, subdirs, file) {
+      'use strict';
+
+      if (this.videoContents.length) {
+        for (let i=this.videoContents.length-1; i>=0; i-=1) {
+          this.videoContents[i].$dom.remove()
+        }
+      }
+
+      
+      var videoContent = new VideoContent(vidNum, volume, subdirs, file, this)
+
+      this.videoContents.push(videoContent)
+
+      $('#videoContents').append(videoContent.$dom)
+      
+      if (!this.videoControls) {
+        this.videoControls = new VideoControls(this)
+        $('#videoControls').append(videoControls.$dom)
+      }
+
+    } //end: VideoApp__addVideoContent()
+
+  {
+    var ext2mimetype = { 'webm': 'video/webm'
+                       , 'mp4' : 'video/mp4'
+                       , 'm4v' : 'video/mp4'
+                       , 'ogg' : 'video/ogg'
+                       , 'ogv' : 'video/ogg'
+                       }
+
+    function determineMimetype(file) {
+      var ext, mimetype
+      var m = file.match(/^.*\.(.*)$/)
+      if (m) {
+        ext = m[1]
+        mimetype = ext2mimetype[ext]
+        return mimetype
+      }
+      return
+    }
+  }
+  function VideoContent(vidNum, volume, subdirs, file, videoApp) {
+    console.log('VideoContent() constructor')
+
+    this.vidNum   = vidNum
+    this.volume   = volume
+    this.subdirs  = subdirs
+    this.file     = file
+    this.videoApp = videoApp
+    this.ids = { div   : 'videoConentDiv-'+vidNum
+               , canvas: 'videoDisplay-'+vidNum
+               , video : 'videoSource-'+vidNum
+               }
+
+    /*
+     * Create the canvas to paint the video onto
+     */
+    var $canvas = $( document.createElement('canvas') )
+                  .attr('id', this.ids.canvas )
+                  .addClass('videoDisplay')
+
+    this.$canvas = $canvas
+    this.canvasPaintTid = undefined
+    
+    var ctx = $canvas[0].getContext('2d')
+    this.ctx = ctx
+
+    /*
+     * Create the video DOM element. Start with the SourceElement first
+     */
+    var parts = ['/stream', volume]
+    if (subdirs.length) parts.push( subdirs.join('/') )
+    parts.push(file)
+    
+    var rawUri = parts.join('/')
+    var uri = encodeURI(rawUri)
+    
+    var mimetype = determineMimetype(file)
+    if (!mimetype) {
+      console.error("Unknown mimetype for file="+file)
+      mimetype = 'video/mp4' //just for shits-n-giggles
+    }
+
+    var $source = $( document.createElement('source') )
+                  .attr('src', uri)
+                  .attr('type', mimetype)
+
+    this.$source = $source
+
+    var $video = $( document.createElement('video') )
+                 .attr('id', this.ids.video )
+                 .attr('controls', true)
+                 .addClass('videoSource')
+                 .append($source)
+
+    this.$video = $video
+    
+    this.$dom = $( document.createElement('div') )
+                .attr('id', this.ids.div)
+                .addClass('videoContent')
+                .append($canvas)
+                .append($video)
+
+    this.setupVideoEvents()
+
+  } //end: VideoContent()
+
+  VideoContent.prototype.setupVideoEvents =
+    function VideoContent__setupVideoEvents() {
+      var $video = this.$video
+      var $canvas = this.$canvas
+      var ctx     = this.ctx
+      
+      
+      var self = this
+      $video.on('loadeddata', function onLoadedData(evt) {
+        console.log("onLoadedData: evt.target.id=%s", evt.target.id)
+        // 'loadeddata' means that the HTMLMediaElement has loaded enough
+        // data to display one frame.
+        //
+        // developer.mozilla.org/en-US/docs/Web/Guide/Events/Media_events says:
+        //  "loadeddata" -> "The first frame of the media has finished loading"
+        //
+        // So I can grab the videoWidth and videoHeight of the video at this
+        //  point, and set the canvasEl width and height.
+        //
+
+        self.videoWidth  = $video[0].videoWidth
+        self.videoHeight = $video[0].videoHeight
+
+        console.log("onLoadedData: width=%f; height=%f;"
+                   , self.videoWidth, self.videoHeight)
+
+        $canvas[0].width  = self.videoWidth
+        $canvas[0].height = self.videoHeight
+        
+        // display first frame in canvasEl
+        //
+        ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
+      })
+
+      this.$video.on('play', function onPlayStartCanvasTimer(evt) {
+        function timerFn() {
+          self.canvasPaintTid = undefined
+
+          if ($video[0].paused || $video[0].ended) {
+            return
+          }
+
+          ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
+
+          self.canvasPaintTid = setTimeout(timerFn, 20) // 50 times a second
+        }
+
+        timerFn()
+      })
+
+      this.$video.on('seeked', function onSeeked(evt) {
+        // display seeked frame when currentTime is manually changed
+        //
+        ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
+      })
+      
+    } //end: VideoControls__setupVideo()
+
+  function VideoControls(videoApp) {
+    this.videoApp = videoApp
+
+  } //end: VideoControls()
+
+  function VolumeBrowser(volumeNames, videoApp) {
     /* volumeNames = [ name_1, name_2, ..., name_n]
      */
-    var self = this
-    
+    this.videoApp = videoApp
     this.ids = { div: 'volumeBrowserDiv'
                , select: 'volumeBrowserSelect'
                , wrapDiv: 'volumeBrowserSelectWrapDiv'
@@ -18,8 +198,9 @@
     this.selectedVolume = undefined
     this.subdirs        = []
     this.dirSelects     = [] //should be dirSelects.length == subdirs.length + 1 
-    this.launchVideoContentButton = undefined
+    this.addVideoContentButton = undefined
     this.btnNum         = 0
+
     this.$dom = $(document.createElement('div'))
                 .attr('id', this.ids.div)
                 .addClass('volumeSelector')
@@ -42,7 +223,8 @@
                       .addClass('wrapVolumeSelect')
                       .append( $select )
                     )
-    
+
+    var self = this
     function selectChanged() {
       var val = $(this).val()
       var i
@@ -61,9 +243,9 @@
         //reset this object
         self.subdirs = []
       }
-      if (self.launchVideoContentButton) {
-        self.launchVideoContentButton.$dom.remove()
-        self.launchVideoContentButton = undefined
+      if (self.addVideoContentButton) {
+        self.addVideoContentButton.$dom.remove()
+        self.addVideoContentButton = undefined
         self.btnNum = 0
       }
 
@@ -83,7 +265,7 @@
     } //end: selectChanged()
     
     $select.change( selectChanged )
-  }
+  } //end: VolumeBroswer()
 
   VolumeBrowser.prototype.addDirSelect =
     function VolumeBrowser__addDirSelect(dirs, files) {
@@ -121,9 +303,9 @@
           //truncate VolumeBroswer's subdirs array
           self.subdirs.length = numDirSelects-1
         }
-        if (self.launchVideoContentButton) {
-          self.launchVideoContentButton.$dom.remove()
-          self.launchVideoContentButton = undefined
+        if (self.addVideoContentButton) {
+          self.addVideoContentButton.$dom.remove()
+          self.addVideoContentButton = undefined
           self.btnNum = 0
         }
 
@@ -170,14 +352,27 @@
                  + '/'
                  + file
                  )
-      //add launchVideoContentButton
-      this.launchVideoContentButton = new LaunchVideoContentButton(
-        this.btnNum, this.selectedVolume, this.subdirs, file, this )
+      var volume = this.selectedVolume
+      var subdirs = _.clone(this.subdirs)
+      var btnNum  = this.btnNum
+      
+      //add addVideoContentButton
+      this.addVideoContentButton = new LaunchVideoContentButton(btnNum, volume,
+                                                                subdirs, file,
+                                                                this )
 
+      var vidNum = this.btnNum
+      
       this.btnNum += 1
 
-      this.$dom.after( this.launchVideoContentButton.$dom )
-      
+      this.$dom.after( this.addVideoContentButton.$dom )
+
+      var self = this
+      function addVideoContent(e) {
+        self.addVideoContentButton.$dom.remove()
+        self.videoApp.addVideoContent(vidNum, volume, subdirs, file)
+      }
+      this.addVideoContentButton.$dom.click( addVideoContent )
     } //end: VolumeBrowser__fileSelected()
 
   function DirSelect(dirNum, dirs, files, volumeBrowser) {
@@ -234,12 +429,9 @@
                       )
     }
 
-  } //DirSelect()
+  } //end: DirSelect()
 
-  function LaunchVideoContentButton( btnNum
-                                   , volume
-                                   , subdirs
-                                   , file
+  function LaunchVideoContentButton(btnNum, volume, subdirs, file
                                    , volumeBrowser) {
     this.btnNum  = btnNum
     this.volume  = volume
@@ -256,27 +448,17 @@
                 .addClass('fileButton')
                 .append(file)
 
-    this.$dom.click(function(e){
-      console.log(this.id+" clicked!")
-      alert(this.id+" Clicked!")
-    })
+  } //end: LaunchVideoConentButton()
 
-  }
-
-  function VideoContent(vidNum, volume, subdirs, file, volumeBrowser) {
-    
-  }
-  
   var VIDEO_APP = {
     "init" : function VIDEO_APP_init(cfg) {
       
       console.log('VIDEO_APP.init(cfg) CALLED cfg =', cfg)
 
-      var volumeBrowser = new VolumeBrowser(cfg['video volumes'])
-      $('#fileSelect').append( volumeBrowser.$dom )
+      var videoApp = new VideoApp(cfg)
 
-      VIDEO_APP.volumeBrowser = volumeBrowser
-      
+      VIDEO_APP.videoApp = videoApp
+
       return
     }
   }

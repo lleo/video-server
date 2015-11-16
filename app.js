@@ -70,8 +70,14 @@ let index  = require('./routes/index')
 debug("typeof lookup = ", typeof lookup)
 
 app.get('/', index)
-app.get('/stream/:video', stream)
 app.get('/lookup', lookup)
+//app.get('/stream/:subdirs*/:file', stream)
+
+//var stream_rx = /\/stream\/([^\/]+)((?:\/[^\/]+(?:\/[^\/]+)*)?)\/([^\/]+)$/;
+var stream_rx = /\/stream\//;
+app.get(stream_rx, stream)
+//app.get(/^\/stream\//, stream)
+//app.get('/stream', stream)
 
 // error handlers
 

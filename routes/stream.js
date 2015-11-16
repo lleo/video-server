@@ -4,6 +4,7 @@ var fs = require('fs')
   , util = require('util')
 
 module.exports = streamVideo
+//module.exports = streamTest
 
 var ext2mimeType = {
   "webm": "video/webm"
@@ -12,18 +13,60 @@ var ext2mimeType = {
 , "ogv" : "video/ogg"
 }
 
+function streamTest(req, res, next) {
+  console.log('HERE 1')
+
+  var app = req.app
+
+  console.log('HERE 2')
+
+  console.log('stream: req.path = %j', req.path)
+
+  console.log('HERE 3')
+
+  var p = decodeURI(req.path).split('/')
+
+  console.log('p = %j', p)
+
+  
+//  res.status(404).send("Sorry can't find that.")
+}
+
 function streamVideo(req, res, next) {
   var app = res.app
-    , video = path.resolve('/', req.param('video')) // '..' do not go farther back
-    , video_directory = app.get('video directory')
-    , vidfqfn = path.join(video_directory, video)
-    , videofn = path.basename(vidfqfn)
-    , ext = path.extname(videofn).toLowerCase().replace(/./, '')
-    , vidstat, total
-    , mimetype
+
+  var p = decodeURI(req.path).split('/')
+  var volume = p[2]
+  var subdirs = p.slice(3,p.length-1)
+  var file = p[p.length-1]
+  console.log('stream: volume = %j', volume)
+  console.log('stream: subdirs = %j', subdirs)
+  console.log('stream: file = %j', file)
+
+  //var volume = req.params[0]
+  //var subdirsStr = req.params[1]
+  //subdirsStr = subdirsStr.slice(1)
+  //var subdirs = subdirsStr == '' ? [] : subdirsStr.split('/')
+  //var file = req.params[2]
+  
+  var app_cfg = app.get('app config by name')
+  var vid_fqdn = app_cfg['video directories'][volume].fqdn
+
+  var vid_path = [vid_fqdn]
+  vid_path = vid_path.concat(subdirs)
+  vid_path.push(file)
+  console.log('stream: vid_path = %j', vid_path)
+
+
+  var video_fqfn = path.resolve.apply(path, vid_path)
+  console.log("stream: video_fqfn=%s", video_fqfn)
+
+  var ext = path.extname(video_fqfn).toLowerCase().replace(/^\./, '')
+  var vidstat, total
+  var mimetype
 
   try {
-    vidstat = fs.statSync(vidfqfn)
+    vidstat = fs.statSync(video_fqfn)
     total = vidstat.size
   } catch (x) {
     console.error("streamVideo: ", x)
@@ -31,14 +74,11 @@ function streamVideo(req, res, next) {
     return
   }
 
-  console.log("streamVideo: %s %s", req.method, req.url)
+  console.log("stream: %s %s", req.method, req.url)
   console.log(util.inspect(req.headers))
-  console.log("video=%s", video)
-  console.log("res.app.get('video directory')=%s", util.inspect(res.app.get('video directory')))
-  console.log("vidfqfn=%s", vidfqfn)
 
   mimetype = ext2mimeType[ext]
-  console.log("!!! ext=%s; mimetype=%s;", ext, mimetype)
+  console.log("stream: !!! ext=%s; mimetype=%s;", ext, mimetype)
 
   if ( req.headers['range'] ) {
     var range = req.headers.range
@@ -49,30 +89,30 @@ function streamVideo(req, res, next) {
       , end = partialend ? parseInt(partialend, 10) : total-1
       , chunksize = (end-start)+1
 
-    console.log('RANGE: ' + start + ' - ' + end + ' = ' + chunksize)
+    console.log('stream: RANGE: ' + start + ' - ' + end + ' = ' + chunksize)
 
-    var file = fs.createReadStream(vidfqfn, {start: start, end: end})
+    var file_rstream = fs.createReadStream(video_fqfn, {start: start, end: end})
 
     res.status(206)
     res.set({ 'Content-Range' : 'bytes ' + start + '-' + end + '/' + total
-         , 'Accept-Ranges' : 'bytes'
-         , 'Content-Length': chunksize
-         , 'Content-Type'  : mimetype
-         })
+            , 'Accept-Ranges' : 'bytes'
+            , 'Content-Length': chunksize
+            , 'Content-Type'  : mimetype
+            })
 //    res.writeHead(206
 //                 , { 'Content-Range' : 'bytes ' + start + '-' + end + '/' + total
 //                   , 'Accept-Ranges' : 'bytes'
 //                   , 'Content-Length': chunksize
 //                   , 'Content-Type'  : mimetype
 //                   })
-    file.pipe(res)
+    file_rstream.pipe(res)
   }
   else {
-    console.log('ALL: ' + total)
+    console.log('stream: ALL: ' + total)
     res.status(200)
     res.set({'Content-Length': total
             , 'Content-Type': mimetype
             })
-    fs.createReadStream(vidfqfn).pipe(res)
+    fs.createReadStream(video_fqfn).pipe(res)
   }
 }

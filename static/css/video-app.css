@@ -63,3 +63,18 @@ select.fileSelector {
   min-width : 180px;
 }
 
+canvas.videoDisplay {
+  width  : 100%;
+}
+
+video.videoSource {
+
+}
+
+div.videoContent {
+
+}
+
+div#videoContents {
+
+}
