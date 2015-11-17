@@ -2,40 +2,36 @@
 /*
  * NOTE: Remember this is running in the browser.
  */
-(function(root, undefined) {
+//This wrapper function is wholly unnecessary but whatever ...
+(function(window, document, undefined) {
+  var root = window //stupid I know :(
 
-  function VideoApp(cfg) {
-    this.volumeBrowser = new VolumeBrowser(cfg['video volumes'], this)
+  function VideoApp(_cfg) {
+    var cfg = _.cloneDeep(_cfg) || {}
+    var controls_cfg = cfg.controls || {}
 
-    $('#fileSelect').append( this.volumeBrowser.$dom )
+    this.cfg = cfg
 
-    this.videoContents = []
-    this.videoControls = undefined
-  }
+    var videoContents = new VideoContents()
+    var videoControls = new VideoControls(videoContents, controls_cfg)
+    var volumeBrowser = new VolumeBrowser(cfg['video volumes'], videoContents)
 
-  VideoApp.prototype.addVideoContent =
-    function VideoApp__addVideoContent(vidNum, volume, subdirs, file) {
-      'use strict';
+    this.volumeBrowser = volumeBrowser
 
-      if (this.videoContents.length) {
-        for (let i=this.videoContents.length-1; i>=0; i-=1) {
-          this.videoContents[i].$dom.remove()
-        }
-      }
+    /*
+     * See comment below on *Multiple Videos*
+     */
+    this.videoContents = videoContents
 
-      
-      var videoContent = new VideoContent(vidNum, volume, subdirs, file, this)
+    this.videoControls = videoControls
 
-      this.videoContents.push(videoContent)
+    $('#fileSelect').append( volumeBrowser.$dom )
 
-      $('#videoContents').append(videoContent.$dom)
-      
-      if (!this.videoControls) {
-        this.videoControls = new VideoControls(this)
-        $('#videoControls').append(videoControls.$dom)
-      }
+    $('#videoStuff').append( videoContents.$dom )
+    
+    $('#videoStuff').append( videoControls.$dom )
 
-    } //end: VideoApp__addVideoContent()
+  } //end: VideoApp()
 
   {
     var ext2mimetype = { 'webm': 'video/webm'
@@ -56,6 +52,143 @@
       return
     }
   }
+
+  function VideoContents() {
+    this.contents = []
+    this.id = 'videoContents'
+    this.$dom = $( document.createElement('div') )
+                .attr('id', this.id)
+                .addClass('videoContents')
+
+    this.contents = [] //array of VideoContent objects
+    this._isFullscreen = false
+  }
+
+  VideoContents.prototype.addVideoContent =
+    function VideoContents__addVideoContent(volume, subdirs, file, videoApp) {
+      'use strict';
+
+      /* Remove any video content that exists
+       * 
+       * Node: *Multiple Videos*
+       * Eventually I'll guard this with a setting that allows multiple
+       * video streams to be open controled with one set of controls.
+       * The reason for watching multiple streams at the same time is to
+       * compare original versions versus extended versions and such.
+       */
+      while (this.contents.length) {
+        this.contents.pop().$dom.remove()
+      }
+
+      var vidNum = this.contents.length
+      
+      var videoContent = new VideoContent(vidNum, volume, subdirs, file)
+
+      this.contents.push(videoContent)
+
+      this.$dom.append(videoContent.$dom)
+    }
+
+  VideoContents.prototype.isPaused = function VideoContents__isPaused() {
+    //only examine the first videoContent assume the rest are the same
+    if (this.contents.length)
+      return this.contents[0].isPaused()
+    else
+      return /* undefined  */
+  }
+
+  VideoContents.prototype.allPaused = function VideoContents__allPaused() {
+    'use strict';
+    var allPaused = true
+    for (let i=0; i<this.contents.length; i+=1) {
+      allPaused = this.contents[i].isPaused() && allPaused
+    }
+    return allPaused
+  }
+  
+  VideoContents.prototype.play = function VideoContents__play() {
+    'use strict';
+    var allPlayed = true
+    for (let i=0; i<this.contents.length; i+=1) {
+      if ( this.contents[i].isPaused() )
+        allPlayed = this.contents[i].play() && allPlayed
+    }
+    return allPlayed
+  }
+  
+  VideoContents.prototype.pause = function VideoContents__pause() {
+    'use strict';
+    var allPaused = true
+    for (let i=0; i<this.contents.length; i+=1) {
+      if ( !this.contents[i].isPaused() )
+        allPaused = this.contents[i].pause() && allPaused
+    }
+    return allPaused
+  }
+  
+  VideoContents.prototype.seek = function VideoContents__seek(nsecs) {
+    'use strict';
+    var allSeeked = true
+    for (let i=0; i<this.contents.length; i+=1) {
+      allSeeked = this.contents[i].seek(nsecs) && allSeeked
+    }
+    return allSeeked
+  }
+
+  VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
+    'use strict';
+    allSetVolume = true
+    for (let i=0; i<this.contents.length; i+=1) {
+      allSetVolume = this.contents[i].setVolume(pct) && allSetVolume
+    }
+    return allSetVolume
+  } //end: VideoContents__setVolume()
+
+  VideoContents.prototype.pause = function VideoContents__pause() {
+    'use strict';
+    var allPaused = true
+    for (let i=0; i<this.contents.length; i+=1) {
+      if ( !this.contents[i].isPaused() )
+        allPaused = this.contents[i].pause() && allPaused
+    }
+    return allPaused
+  }
+
+  VideoContents.prototype.toggleFullscreen =
+    function VideoContents__toggleFullscreen() {
+      'use strict';
+      if (this.contents.length > 1) {
+        /* Only fullScreen the first one for now
+         *
+         * I'm gonna want to arrange screens thus:
+         * +------------------+
+         * |                  |
+         * |                  |
+         * |                  |
+         * +------------------+
+         *               +------------------+
+         *               |                  |
+         *               |                  |
+         *               |                  |
+         *               +------------------+
+         * +------------------+
+         * |                  |
+         * |                  |
+         * |                  |
+         * +------------------+
+         */
+        console.error('VideoContents__toggleFullscreen: not supported for this.contents.length > 1')
+        return
+      }
+      else if (this.contents.length == 1)
+        return this._isFullscreen = this.contents[0].toggleFullscreen()
+      else {
+        console.error('VideoContents__toggleFullscreen: no video contents this.contents.length < 1')
+        return
+      }
+  } //end: VideoContents__fullscreen()
+
+
   function VideoContent(vidNum, volume, subdirs, file, videoApp) {
     console.log('VideoContent() constructor')
 
@@ -68,6 +201,7 @@
                , canvas: 'videoDisplay-'+vidNum
                , video : 'videoSource-'+vidNum
                }
+    this._isFullscreen = false //assume not fullscreen to start !?!
 
     /*
      * Create the canvas to paint the video onto
@@ -178,17 +312,132 @@
         ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
       })
       
-    } //end: VideoControls__setupVideo()
+    } //end: VideoContent__setupVideo()
 
-  function VideoControls(videoApp) {
-    this.videoApp = videoApp
+  VideoContent.prototype.isPaused = function VideoContent__isPaused() {
+    return this.$video[0].paused
+  }
+
+  VideoContent.prototype.play = function VideoContent__play() {
+    if ( this.isPaused() )
+      this.$video[0].play()
+    return !this.isPaused()
+  }
+
+  VideoContent.prototype.pause = function VideoContent__pause() {
+    if ( !this.isPaused() )
+      this.$video[0].pause()
+    return this.isPaused()
+  }
+
+  VideoContent.prototype.seek = function VideoContent__seek(nsecs) {
+    
+  }
+
+  VideoContent.prototype.setVolume = function VideoContent__setVolume(pct) {
+    
+  }
+
+  VideoContent.prototype.toggelFullscreen =
+    function VideoContent__toggleFullscreen() {
+      if (this._isFullscreen) {
+        if (this.$video[0].requestFullscreen) {
+          console.log('VideoContent__toggleFullscreen: used requestFullscreen')
+          this.$video[0].requestFullscreen()
+        }
+        else if (this.$video[0].mozRequestFullScreen) {
+          console.log('VideoContent__toggleFullscreen: used mozRequestFullScreen')
+          this.$video[0].mozRequestFullScreen()
+        }
+        else if (this.$video[0].webkitRequestFullscreen) {
+          console.log('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
+          this.$video[0].webkitRequestFullscreen()
+        }
+        else {
+          console.log('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
+          alert("requestFullScreen not implemented by this browser")
+          return
+        }
+        return this._isFullscreen = true
+      }
+      else {
+        // try to cancel fullscreen
+        if (document.cancelFullScreen) {
+          console.log('VideoContent__toggleFullscreen: used document.cancelFullScreen')
+          document.cancelFullScreen()
+        }
+        else if (document.mozCancelFullScreen) {
+          console.log('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
+          document.mozCancelFullScreen()
+        }
+        else if (document.webkitCancelFullScreen) {
+          console.log('VideoContent__toggleFullscreen: used document.webkitCancelFullScreen')
+          document.webkitCancelFullScreen()
+        }
+        else {
+          console.log('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
+          alert('cancelFullScreen not implemented by this browser')
+          return
+        }
+        return this._isFullscreen = false
+      }
+      return
+    } //end: VideoContent__toggleFullscreen()
+
+
+
+  function VideoControls(videoContents, _cfg) {
+    this.videoContents = videoContents
+
+    var cfg = _.cloneDeep(_cfg) || {}
+    
+    this.skipBackSecs = -(cfg.skipBackSecs || 10)
+    this.skipForwSecs = cfg.skipForwSecs || 30
+
+    this.ids = { div      : 'videoControls'
+               , playSym  : 'playSym'
+               , pauseSym : 'pauseSym'
+               , playDiv  : 'play'
+               }
+
+    this.$dom = $( document.createElement('div') )
+                .attr('id', this.ids.div)
+                .attr('class', "controls")
+
+    var $playSym = $( document.createElement('i') )
+                   .attr('id', this.ids.playSym)
+                   .addClass('fa')
+                   .addClass('fa-play')
+
+    var $play = $( document.createElement('div') )
+                .attr('id', this.ids.playDiv)
+                .addClass('btn')
+                .addClass('play')
+                .append( $playSym )
+
+    var self = this
+
+    $play.click(function(e) {
+      if ( self.videoContents.isPaused() ) {
+        self.videoContents.play()
+        $playSym.removeClass('fa-play')
+        $playSym.addClass('fa-pause')
+      }
+      else {
+        self.videoContents.pause()
+        $playSym.removeClass('fa-pause')
+        $playSym.addClass('fa-play')
+      }
+    })
+    
+    this.$dom.append( $play )
 
   } //end: VideoControls()
-
-  function VolumeBrowser(volumeNames, videoApp) {
+  
+  function VolumeBrowser(volumeNames, videoContents) {
     /* volumeNames = [ name_1, name_2, ..., name_n]
      */
-    this.videoApp = videoApp
+    this.videoContents = videoContents
     this.ids = { div: 'volumeBrowserDiv'
                , select: 'volumeBrowserSelect'
                , wrapDiv: 'volumeBrowserSelectWrapDiv'
@@ -282,7 +531,7 @@
       this.$dom.append( dirSelect.$dom )
 
       /* 
-       * REACT to this dirSelect being selected
+       * React to this dirSelect being selected
        */
       // capture the number of dirSelect currently
       var numDirSelects = this.dirSelects.length
@@ -354,23 +603,21 @@
                  )
       var volume = this.selectedVolume
       var subdirs = _.clone(this.subdirs)
-      var btnNum  = this.btnNum
       
       //add addVideoContentButton
-      this.addVideoContentButton = new LaunchVideoContentButton(btnNum, volume,
-                                                                subdirs, file,
-                                                                this )
+      var vidCnts = this.videoContents
+      this.addVideoContentButton = new LaunchVideoContentButton(volume,
+                                                                subdirs,
+                                                                file,
+                                                                vidCnts)
 
-      var vidNum = this.btnNum
-      
-      this.btnNum += 1
 
       this.$dom.after( this.addVideoContentButton.$dom )
 
       var self = this
       function addVideoContent(e) {
         self.addVideoContentButton.$dom.remove()
-        self.videoApp.addVideoContent(vidNum, volume, subdirs, file)
+        self.videoContents.addVideoContent(volume, subdirs, file)
       }
       this.addVideoContentButton.$dom.click( addVideoContent )
     } //end: VolumeBrowser__fileSelected()
@@ -431,21 +678,18 @@
 
   } //end: DirSelect()
 
-  function LaunchVideoContentButton(btnNum, volume, subdirs, file
-                                   , volumeBrowser) {
-    this.btnNum  = btnNum
+  function LaunchVideoContentButton(volume, subdirs, file) {
     this.volume  = volume
     this.subdirs = _.clone(subdirs)
     this.file    = file
-    this.volumeBrowser = volumeBrowser
-    this.id = 'launchBtn-'+btnNum
+    this.id = 'launchButton'
     
 
     this.$dom = $( document.createElement('button') )
                 .attr('type', 'button')
                 .attr('id', this.id)
                 .attr('value', file)
-                .addClass('fileButton')
+                .addClass('launchButton')
                 .append(file)
 
   } //end: LaunchVideoConentButton()
@@ -464,4 +708,4 @@
   }
 
   root.VIDEO_APP = VIDEO_APP
-})(window)
+})(window, window.document)

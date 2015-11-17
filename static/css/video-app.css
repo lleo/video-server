@@ -14,15 +14,20 @@ span.notice {
   align: center;
 }
 
-button.fileButton {
+button.launchButton {
   margin-top   : 10px;
   margin-left  : auto;
   margin-right : auto;
   margin-bottom: auto;
+  background-color : lightgrey;
 }
 
-button.fileButton::before {
+button.launchButton::before {
   content : "Launch: ";
+}
+
+div#fileSelect {
+  display : inline-block;
 }
 
 div.volumeSelector {
@@ -63,18 +68,47 @@ select.fileSelector {
   min-width : 180px;
 }
 
+div#videoStuff {
+  display : inline-block;
+}
+
+div#videoContents {
+  display: inline-block;
+}
+
+div#videoContents {
+
+}
+
 canvas.videoDisplay {
   width  : 100%;
 }
 
 video.videoSource {
-
+  max-width : 600px;
 }
 
 div.videoContent {
 
 }
 
-div#videoContents {
+
+div#videoControls {
 
 }
+
+div#play {
+  display: inline-block;
+  padding-left: 4px;
+  padding-right: 3px;  
+}
+
+div.btn {
+  font-family: FontAwesome;
+  border: solid black 1.5px;
+  border-radius: 5px; /* rounded corners */
+  background-color: lightgrey;
+  text-align: center;
+/*  min-width: 2em; */
+}
+
