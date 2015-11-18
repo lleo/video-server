@@ -12,9 +12,9 @@
 
     this.cfg = cfg
 
-    var videoContents = new VideoContents()
-    var videoControls = new VideoControls(videoContents, controls_cfg)
-    var volumeBrowser = new VolumeBrowser(cfg['video volumes'], videoContents)
+    var videoContents = new VideoContents(this)
+    var videoControls = new VideoControls(controls_cfg, this)
+    var volumeBrowser = new VolumeBrowser(cfg['video volumes'], this)
 
     this.volumeBrowser = volumeBrowser
 
@@ -29,7 +29,7 @@
 
     $('#videoStuff').append( videoContents.$dom )
     
-    $('#videoStuff').append( videoControls.$dom )
+//    $('#videoStuff').append( videoControls.$dom )
 
   } //end: VideoApp()
 
@@ -53,7 +53,8 @@
     }
   }
 
-  function VideoContents() {
+  function VideoContents(videoApp) {
+    this.videoApp = videoApp
     this.contents = []
     this.id = 'videoContents'
     this.$dom = $( document.createElement('div') )
@@ -65,7 +66,7 @@
   }
 
   VideoContents.prototype.addVideoContent =
-    function VideoContents__addVideoContent(volume, subdirs, file, videoApp) {
+    function VideoContents__addVideoContent(volume, subdirs, file) {
       'use strict';
 
       /* Remove any video content that exists
@@ -82,19 +83,50 @@
 
       var vidNum = this.contents.length
       
-      var videoContent = new VideoContent(vidNum, volume, subdirs, file)
+      var videoContent = new VideoContent(vidNum, volume, subdirs, file,
+                                          this.videoApp)
 
       this.contents.push(videoContent)
 
       this.$dom.append(videoContent.$dom)
     }
 
+  VideoContents.prototype.startBusy = function VideoContents__startBusy() {
+    console.log('VideoContents__startBusy:')
+    
+    if (this.contents.length) {
+      this.contents[0].startBusy()
+    }
+  }
+
+  VideoContents.prototype.stopBusy = function VideoContents__stopBusy() {
+    console.log('VideoContents__stopBusy:')
+    
+    if (this.contents.length) {
+      this.contents[0].stopBusy()
+    }
+  }
+  
   VideoContents.prototype.isPaused = function VideoContents__isPaused() {
+    var firstPaused, allPaused
+    if (this.contents.length) {
+      // Just an internal consistancy check :(
+      firstPaused = this.contents[0].isPaused()
+      allPaused = this.allPaused()
+      if (firstPaused && !allPaused) {
+        console.error('VideoContents__isPaused: firstPaused && !allPaused')
+        return firstPaused
+      }
+      return allPaused
+    }
+    return
+    /*
     //only examine the first videoContent assume the rest are the same
     if (this.contents.length)
       return this.contents[0].isPaused()
     else
-      return /* undefined  */
+      return
+    */
   }
 
   VideoContents.prototype.allPaused = function VideoContents__allPaused() {
@@ -137,23 +169,25 @@
 
   VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
     'use strict';
-    allSetVolume = true
+    if (pct > 0 && pct < 1) {
+      console.error('VideoContents__setVolume: pct > 0 && pct < 1')
+      return
+    }
+    if (pct < 0) pct = 0
+    if (pct > 100) pct = 100
+
+    var allSetVolume = true
     for (let i=0; i<this.contents.length; i+=1) {
       allSetVolume = this.contents[i].setVolume(pct) && allSetVolume
     }
     return allSetVolume
   } //end: VideoContents__setVolume()
 
-  VideoContents.prototype.pause = function VideoContents__pause() {
-    'use strict';
-    var allPaused = true
-    for (let i=0; i<this.contents.length; i+=1) {
-      if ( !this.contents[i].isPaused() )
-        allPaused = this.contents[i].pause() && allPaused
+  VideoContents.prototype.isFullscreen =
+    function VideoContents__isFullscreen() {
+      return this._isFullscreen
     }
-    return allPaused
-  }
-
+  
   VideoContents.prototype.toggleFullscreen =
     function VideoContents__toggleFullscreen() {
       'use strict';
@@ -186,7 +220,7 @@
         console.error('VideoContents__toggleFullscreen: no video contents this.contents.length < 1')
         return
       }
-  } //end: VideoContents__fullscreen()
+  } //end: VideoContents__toggleFullscreen()
 
 
   function VideoContent(vidNum, volume, subdirs, file, videoApp) {
@@ -197,11 +231,15 @@
     this.subdirs  = subdirs
     this.file     = file
     this.videoApp = videoApp
-    this.ids = { div   : 'videoConentDiv-'+vidNum
-               , canvas: 'videoDisplay-'+vidNum
-               , video : 'videoSource-'+vidNum
+    this.ids = { div     : 'videoConentDiv-'+vidNum
+               , canvas  : 'videoCanvas-'+vidNum
+               , spinnerSym : 'videoSpinnerSym-'+vidNum
+               , spinnerDiv : 'videoSpinnerDiv-'+vidNum
+               , display : 'videoDisplay-'+vidNum
+               , video   : 'videoSource-'+vidNum
                }
     this._isFullscreen = false //assume not fullscreen to start !?!
+    this.canPlay = undefined //set by 'canplay' event
 
     /*
      * Create the canvas to paint the video onto
@@ -215,6 +253,34 @@
     
     var ctx = $canvas[0].getContext('2d')
     this.ctx = ctx
+
+    var $display = $( document.createElement('div') )
+                   .attr('id', this.ids.display)
+                   .addClass('videoDisplay')
+                   .append( $canvas )
+    this.$display = $display
+
+    var $spinnerSym = $( document.createElement('i') )
+                      .attr('id', this.ids.spinnerSym)
+                      .addClass('fa')
+                      .addClass('fa-spinner')
+                      .addClass('fa-pulse')
+                      .addClass('fa-3x')
+
+    this.$spinnerSym = $spinnerSym
+
+    var $spinner = $( document.createElement('div') )
+                   .attr('id', this.ids.spinnerDiv)
+                   .addClass('spinner')
+                   //.addClass('hide')
+                   .append( this.$spinnerSym )
+
+    this.$spinner = $spinner
+
+    if (0 == vidNum) {
+      this.$display.append( this.$spinner )
+      this.$display.append( videoApp.videoControls.$dom )
+    }
 
     /*
      * Create the video DOM element. Start with the SourceElement first
@@ -249,23 +315,28 @@
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.ids.div)
                 .addClass('videoContent')
-                .append($canvas)
-                .append($video)
+                .append( this.$display )
+                .append( this.$video )
 
-    this.setupVideoEvents()
+    this._eventsSetup = false
+    this._setupVideoEvents()
 
   } //end: VideoContent()
 
-  VideoContent.prototype.setupVideoEvents =
-    function VideoContent__setupVideoEvents() {
+  VideoContent.prototype._setupVideoEvents =
+    function VideoContent___setupVideoEvents() {
+      if (this._eventsSetup) return
+      this._eventsSetup = true
+
       var $video = this.$video
       var $canvas = this.$canvas
       var ctx     = this.ctx
-      
+
+      var videoControls = this.videoApp.videoControls
       
       var self = this
-      $video.on('loadeddata', function onLoadedData(evt) {
-        console.log("onLoadedData: evt.target.id=%s", evt.target.id)
+      $video.on('loadeddata', function onLoadedData(e) {
+        console.log("onLoadedData: e.target.id=%s", e.target.id)
         // 'loadeddata' means that the HTMLMediaElement has loaded enough
         // data to display one frame.
         //
@@ -290,7 +361,34 @@
         ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
       })
 
-      this.$video.on('play', function onPlayStartCanvasTimer(evt) {
+      //HTMLMediaElement Constant
+      // eg. HTMLMediaElement.HAV_ENOUGH_DATA == 4
+      // see: https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
+      var MEC = [ "HAVE_NOTHING"
+                , "HAVE_METADATA"
+                , "HAVE_CURRENT_DATA"
+                , "HAVE_FUTURE_DATA"
+                , "HAVE_ENOUGH_DATA" ]
+
+      $video.on('canplay', function onCanPlay(e) {
+        self.canPlay = self.$video[0].readyState === HTMLMediaElement.HAVE_ENOUGH_DATA
+        console.log("onCanPlay: %s.readyState = %s(%o); "
+                   + "set self<VideoContent>.canPlay = %o"
+                   , self.$video[0].id
+                   , MEC[self.$video[0].readyState]
+                   , self.$video[0].readyState
+                   , self.canPlay)
+
+        videoControls.enable()
+        videoControls.cssPositionControls()
+        self.cssCenterSpinner()
+      })
+      
+      $video.on('playing', function onPlaying(e){
+        console.log("onPlaying: e.target.id=%s", e.target.id)
+      })
+
+      $video.on('play', function onPlayStartCanvasTimer(e) {
         function timerFn() {
           self.canvasPaintTid = undefined
 
@@ -306,14 +404,107 @@
         timerFn()
       })
 
-      this.$video.on('seeked', function onSeeked(evt) {
+      $video.on('pause', function onPauseMisc(e){
+        console.log("onPlayMisc: e.target.id=%s", e.target.id)
+        //do something ...maybe
+      })
+
+      $video.on('seeked', function onSeeked(e) {
         // display seeked frame when currentTime is manually changed
         //
+        console.log('onSeeked: redrawing canvas')
+
+        //videoControls.enable() //FIXME: this is causing error messages
+        //console.log('onSeeked: after videoControls.enable()')
+        self.stopBusy()
+        
         ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
       })
       
+      $video.on('seeking', function onSeeking(e){
+        console.log("onSeeking: e.target.id=%s", e.target.id)
+        self.startBusy()
+//        videoControls.disable()
+      })
+
+      $video.on('timeupdate', function onTimeUpdate(e){
+        // By observation Chrome seems to fire off every quarter second.
+        //
+        //console.log("onTimeUpdate: e.target.id=%s; videoEl.currentTime=%f;"
+        //           , e.target.id, videoEl.currentTime)
+        //history.pushState(stateObj, "page 2", "bar.html");
+
+        //self.videoApp.videoControls.$position
+        //positionRngEl.value = e.target.currentTime
+        //positionTimEl.value = Math.floor(e.target.currentTime)
+      })
+
+      $video.on('ended', function onEnded(e){
+        console.log("onEnded: e.target.id=%s", e.target.id)
+
+
+        //var $play = self.videoApp.videoControls.$play
+        var $playSym = self.videoApp.videoControls.$playSym
+        
+        if ($playSym.hasClass('fa-pause')) {
+          $playSym.removeClass('fa-pause')
+          $playSym.addClass('fa-play')
+        }
+      })
+
+      function onFullscreenChange(e) {
+        console.log('onFullscreenChange: e = %o', e)
+        var event = e.originalEvent.type
+        console.log('onFullscreenChange: caused by %o', event)
+        self.fullscreenChanged(e)
+      }
+      $(document).on('webkitfullscreenchange '
+                    +'mozfullscreenchange '
+                    +'fullscreenchange '
+                    +'MSFullscreenChange'
+                    , onFullscreenChange);
+
     } //end: VideoContent__setupVideo()
 
+  VideoContent.prototype.startBusy = function VideoContent__startBusy() {
+    console.log('VideoContent__startBusy:')
+  }
+
+  VideoContent.prototype.stopBusy = function VideoContent__stopBusy() {
+    console.log('VideoContent__stopBusy:')
+  }
+  
+  VideoContent.prototype.fullscreenChanged =
+    function VideoContent__fullscreenChanged(e) {
+      var videoControls = this.videoApp.videoControls
+      var $fullscreenSym = videoControls.$fullscreenSym
+
+      var self = this
+      setTimeout(function() {
+        self.cssCenterSpinner()
+        videoControls.cssPositionControls()
+      }, 500)
+      
+      if ( $fullscreenSym.hasClass('fa-arrows-alt') ) {
+        $fullscreenSym.removeClass('fa-arrows-alt')
+        $fullscreenSym.addClass('fa-compress')
+      }
+      else if ( $fullscreenSym.hasClass('fa-compress') ) {
+        $fullscreenSym.removeClass('fa-compress')
+        $fullscreenSym.addClass('fa-arrows-alt')
+      }
+      return
+    }
+  
+  VideoContent.prototype.cssCenterSpinner =
+    function VideoContent__cssCenterSpinner() {
+      var $spinner = this.$spinner
+      var $display = this.$display
+      var offset_x = ($display.width()/2)-($spinner.width()/2)
+      var offset_y = ($display.height()/2)-($spinner.height()/2)
+      $spinner.css({top: offset_y, left: offset_x})
+    }
+  
   VideoContent.prototype.isPaused = function VideoContent__isPaused() {
     return this.$video[0].paused
   }
@@ -331,33 +522,58 @@
   }
 
   VideoContent.prototype.seek = function VideoContent__seek(nsecs) {
-    
+    this.$video[0].currentTime += nsecs
   }
 
   VideoContent.prototype.setVolume = function VideoContent__setVolume(pct) {
+    if (pct > 0 && pct < 1) {
+      console.error('VideoContent__setVolume: pct > 0 && pct < 1')
+      return
+    }
+    if (pct < 0) pct = 0
+    if (pct > 100) pct = 100
     
+    this.$video[0].volume = pct / 100
+
+    return true
   }
 
-  VideoContent.prototype.toggelFullscreen =
+  VideoContent.prototype.isFullscreen =
+    function VideoContent__isFullscreen() {
+      return this._isFullscreen
+    }
+
+  VideoContent.prototype.toggleFullscreen =
     function VideoContent__toggleFullscreen() {
-      if (this._isFullscreen) {
-        if (this.$video[0].requestFullscreen) {
+      //$(document).on('webkitfullscreenchange '
+      //              +'mozfullscreenchange '
+      //              +'fullscreenchange '
+      //              +'MSFullscreenChange', fn);
+      if ( !this.isFullscreen() ) {
+        //var el = this.$video[0]
+        var el = this.$display[0]
+        if (el.requestFullscreen) {
           console.log('VideoContent__toggleFullscreen: used requestFullscreen')
-          this.$video[0].requestFullscreen()
+          el.requestFullscreen()
         }
-        else if (this.$video[0].mozRequestFullScreen) {
+        else if (el.msRequestFullscreen) {
+          console.log('VideoContent__toggleFullscreen: used msRequestFullscreen')
+          el.msRequestFullscreen()
+        }
+        else if (el.mozRequestFullScreen) {
           console.log('VideoContent__toggleFullscreen: used mozRequestFullScreen')
-          this.$video[0].mozRequestFullScreen()
+          el.mozRequestFullScreen()
         }
-        else if (this.$video[0].webkitRequestFullscreen) {
+        else if (el.webkitRequestFullscreen) {
           console.log('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
-          this.$video[0].webkitRequestFullscreen()
+          el.webkitRequestFullscreen()
         }
         else {
           console.log('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
           alert("requestFullScreen not implemented by this browser")
           return
         }
+        this.cssCenterSpinner()
         return this._isFullscreen = true
       }
       else {
@@ -365,6 +581,10 @@
         if (document.cancelFullScreen) {
           console.log('VideoContent__toggleFullscreen: used document.cancelFullScreen')
           document.cancelFullScreen()
+        }
+        else if (document.msExitFullscreen) {
+          console.log('VideoContent__toggleFullscreen: used document.msExitFullscreen')
+          document.msExitFullscreen()
         }
         else if (document.mozCancelFullScreen) {
           console.log('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
@@ -386,58 +606,274 @@
 
 
 
-  function VideoControls(videoContents, _cfg) {
-    this.videoContents = videoContents
-
+  function VideoControls(_cfg, videoApp) {
+    this.videoApp = videoApp
+    //this.videoContents = videoApp.videoContents
     var cfg = _.cloneDeep(_cfg) || {}
     
-    this.skipBackSecs = -(cfg.skipBackSecs || 10)
-    this.skipForwSecs = cfg.skipForwSecs || 30
+    this.skipBackSecs = cfg.skipBackSecs || 10
+    this.skipForwSecs = cfg.skipForwSecs || 120
 
-    this.ids = { div      : 'videoControls'
-               , playSym  : 'playSym'
-               , pauseSym : 'pauseSym'
-               , playDiv  : 'play'
+    this._enabled = false
+
+    this.ids = { div           : 'videoControls'
+               , playSym       : 'playSym'
+               , pauseSym      : 'pauseSym'
+               , playDiv       : 'play'
+               , skipSym       : 'skipSym'
+               , skipDiv       : 'skip'
+               , backSym       : 'backSym'
+               , backDiv       : 'back'
+               , volumeDiv     : 'volume'
+               , volumeSym     : 'volumeSym'
+               , volumeRng     : 'volumeRng'
+               , positionDiv   : 'position'
+               , positionTxt   : 'positionTxt'
+               , positionRng   : 'positionRng'
+               , fullscreenDiv : 'fullscreen'
+               , fullscreenSym : 'fullscreenSym'
                }
+
+    this.$playSym       = undefined
+    this.$play          = undefined
+    this.$skipSym       = undefined
+    this.$skip          = undefined
+    this.$backSym       = undefined
+    this.$back          = undefined
+    this.$volume        = undefined
+    this.$volumeRng     = undefined
+    this.$position      = undefined
+    this.$positionTxt   = undefined
+    this.$positionRnt   = undefined
+    this.$fullscreen    = undefined
+    this.$fullscreenSym = undefined
 
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.ids.div)
-                .attr('class', "controls")
+                .addClass('disabled')
 
-    var $playSym = $( document.createElement('i') )
-                   .attr('id', this.ids.playSym)
-                   .addClass('fa')
-                   .addClass('fa-play')
+    this.$playSym = $( document.createElement('i') )
+                    .attr('id', this.ids.playSym)
+                    .addClass('fa')
+                    .addClass('fa-play')
 
-    var $play = $( document.createElement('div') )
-                .attr('id', this.ids.playDiv)
-                .addClass('btn')
-                .addClass('play')
-                .append( $playSym )
-
+    this.$play = $( document.createElement('div') )
+                 .attr('id', this.ids.playDiv)
+                 .addClass('control')
+                 .append( this.$playSym )
+    
     var self = this
 
-    $play.click(function(e) {
-      if ( self.videoContents.isPaused() ) {
-        self.videoContents.play()
-        $playSym.removeClass('fa-play')
-        $playSym.addClass('fa-pause')
+    this.onPlayClickFn = function onPlayClick(e) {
+      var videoContents = self.videoApp.videoContents
+      
+      console.log('onPlayClick: videoContents.isPaused() = %o', videoContents.isPaused())
+      if ( videoContents.isPaused() ) {
+        console.log('onPlayClick: calling videoContents.play()')
+        videoContents.play()
+        self.$playSym.removeClass('fa-play')
+        self.$playSym.addClass('fa-pause')
       }
       else {
-        self.videoContents.pause()
-        $playSym.removeClass('fa-pause')
-        $playSym.addClass('fa-play')
+        console.log('onPlayClick: calling videoContents.pause()')
+        videoContents.pause()
+        self.$playSym.removeClass('fa-pause')
+        self.$playSym.addClass('fa-play')
       }
-    })
+    }
     
-    this.$dom.append( $play )
+    this.$dom.append( this.$play )
 
+    this.$skipSym = $( document.createElement('i') )
+                    .attr('id', this.ids.skipSym)
+                    .addClass('fa')
+                    .addClass('fa-step-forward')
+    
+    this.$skip = $( document.createElement('div') )
+                 .attr('id', this.ids.skipDiv)
+                 .addClass('control')
+                 .append( this.$skipSym )
+
+    this.onSkipClickFn = function onSkipClick(e) {
+      console.log('onSkipClick: seeking %d secs', self.skipForwSecs)
+      var videoContents = self.videoApp.videoContents
+      videoContents.seek(self.skipForwSecs)
+    }
+    
+    this.$dom.append( this.$skip )
+
+    this.$backSym = $( document.createElement('i') )
+                    .attr('id', this.ids.backSym)
+                    .addClass('fa')
+                    .addClass('fa-step-backward')
+    
+    this.$back = $( document.createElement('div') )
+                 .attr('id', this.ids.backDiv)
+                 .addClass('control')
+                 .append( this.$backSym )
+
+    this.onBackClickFn = function onBackClick(e) {
+      console.log('onBackClick: seeking %d secs', -self.skipBackSecs)
+      var videoContents = self.videoApp.videoContents
+      videoContents.seek(-self.skipBackSecs)
+    }
+
+    this.$dom.append( this.$back )
+
+    // need to do this.$position
+
+    this.$fullscreenSym = $( document.createElement('i') )
+                          .attr('id', this.ids.fullscreenSym)
+                          .addClass('fa')
+                          .addClass('fa-arrows-alt')
+
+    this.$fullscreen = $( document.createElement('div') )
+                       .attr('id', this.ids.fullscreenDiv)
+                       .addClass('control')
+                       .append( this.$fullscreenSym )
+
+    this.onFullscreenClickFn = function onFullscreenClick(e) {
+      console.log('onFullscreenClick: called')
+
+      var videoContents = self.videoApp.videoContents
+
+      videoContents.toggleFullscreen()
+      //self.cssPositionControls()
+    }
+
+    this.$dom.append( this.$fullscreen )
+
+    this.$volumeSym = $( document.createElement('i') )
+                      .attr('id', this.ids.volumeSym)
+                      .addClass('fa')
+                      .addClass('fa-volume-up')
+                      //.addClass('fa-volume-down')
+                      //.addClass('fa-volume-off')
+
+    this.onVolumeSymClickFn = function onVolumeSymClick(e) {
+      if (self.$volume[0].muted) {
+        this.removeClass('fa-volume-off')
+        if (self.$volume[0].volume < 0.5) {
+          self.$volumeSym.removeClass('fa-volume-up')
+          self.$volumeSym.addClass('fa-volume-down')
+        }
+        else {
+          self.$volumeSym.removeClass('fa-volume-down')
+          self.$volumeSym.addClass('fa-volume-up')
+        }
+      }
+    }
+
+    this.$volumeRng = $( document.createElement('input') )
+                      .attr('id', this.ids.volumeRng)
+                      .attr('type', 'range')
+                      .attr('min', 0)
+                      .attr('max', 100)
+                      .attr('value', 100)
+                      .addClass('range')
+
+    this.onVolumeRngInputFn = function onVolumeRngInput(e) {
+      var volume = e.target.valueAsNumber
+      console.log('onVolumeRngInput: volume = %d', volume)
+
+      var videoContents = self.videoApp.videoContents
+
+      videoContents.setVolume(volume)
+      //self.$video[0].volume = volume / 100
+    }
+
+    this.$volume = $( document.createElement('div') )
+                   .attr('id', this.ids.volumeDiv)
+                   .addClass('control')
+                   .append( this.$volumeSym )
+                   .append( this.$volumeRng )
+    
+
+    this.$dom.append( this.$volume )
+
+    //this.enable()
   } //end: VideoControls()
+
+  VideoControls.prototype.cssPositionControls =
+    function VideoControls__cssPositionControls() {
+      var videoContents, $display, $controls, offset
+      
+      videoContents = this.videoApp.videoContents
+      if ( videoContents.contents.length ) {
+        //grab the first $display where the controls are under
+        $display = videoContents.contents[0].$display
+        $controls = $('#videoControls')
+        offset = ($display.width()/2) - ($controls.width()/2)
+        $controls.css({top: 10, left: offset})
+      }
+    }
   
-  function VolumeBrowser(volumeNames, videoContents) {
+  VideoControls.prototype.reset = function VideoControls__reset() {
+    this.disable()
+    if (this.$playSym.hasClass('fa-pause')) {
+      this.$playSym.removeClass('fa-pause')
+      this.$playSym.addClass('fa-play')
+    }
+    this.setVolume(100)
+  }
+
+  VideoControls.prototype.isEnabled = function VideoControls__isEnabled() {
+    return this._enabled
+  }
+  
+  VideoControls.prototype.enable = function VideoControls__enable() {
+    if (!this.isEnabled()) {
+      if ( this.$dom.hasClass('disabled') ) {
+        this.$dom.removeClass('disabled')
+        this.$dom.addClass('enabled')
+      }
+      else {
+        console.error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
+        //return;
+      }
+      
+      this.$play.on('click', this.onPlayClickFn)
+      this.$skip.on('click', this.onSkipClickFn)
+      this.$back.on('click', this.onBackClickFn)
+      this.$fullscreen.on('click', this.onFullscreenClickFn)
+      this.$volumeSym.on('click', this.onVolumeSymClickFn)
+      this.$volumeRng.on('input', this.onVolumeRngInputFn)
+      
+      this._enabled = true
+    }
+  }
+
+  VideoControls.prototype.disable = function VideoControls__disable() {
+    if (this.isEnabled()) {
+      this.$dom.removeClass('enabled')
+      this.$dom.addClass('enabled')
+      this.$play.off('click', this.onPlayClickFn)
+      this.$skip.off('click', this.onSkipClickFn)
+      this.$back.off('click', this.onBackClickFn)
+      this.$fullscreen.off('click', this.onFullscreenClickFn)
+      this.$volumeSym.off('click', this.onVolumeSymClickFn)
+      this._enabled = false
+    }
+  }
+
+  VideoContents.prototype.setVolume = function VideoControls__setVolume(pct) {
+    'use strict';
+    if (pct < 0) pct = 0
+    if (pct > 100) pct = 100
+    console.log('VideoControls__setVolume: pct = %d', pct)
+    console.log('VideoControls__setVolume: doing nothing for now')
+
+    var allVolumeSet = true
+    for (let i=0; i<this.contents.length; i+=1) {
+      allVolumeSet = this.contents[i].setVolume(0) && allVolumeSet
+    }
+    return allVolumeSet
+  }
+  
+  function VolumeBrowser(volumeNames, videoApp) {
     /* volumeNames = [ name_1, name_2, ..., name_n]
      */
-    this.videoContents = videoContents
+    this.videoApp = videoApp
     this.ids = { div: 'volumeBrowserDiv'
                , select: 'volumeBrowserSelect'
                , wrapDiv: 'volumeBrowserSelectWrapDiv'
@@ -605,19 +1041,16 @@
       var subdirs = _.clone(this.subdirs)
       
       //add addVideoContentButton
-      var vidCnts = this.videoContents
       this.addVideoContentButton = new LaunchVideoContentButton(volume,
                                                                 subdirs,
-                                                                file,
-                                                                vidCnts)
-
+                                                                file)
 
       this.$dom.after( this.addVideoContentButton.$dom )
 
       var self = this
       function addVideoContent(e) {
         self.addVideoContentButton.$dom.remove()
-        self.videoContents.addVideoContent(volume, subdirs, file)
+        self.videoApp.videoContents.addVideoContent(volume, subdirs, file)
       }
       this.addVideoContentButton.$dom.click( addVideoContent )
     } //end: VolumeBrowser__fileSelected()
