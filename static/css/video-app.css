@@ -192,9 +192,13 @@ div#volume {
 
 div#volumeSymDiv {
   display        : inline-block;
-  virtical-align : text-top;
-  align-text     : right;
+  position       : relative;
+  top            : -2px;
+  left           : 0px;
+/*  virtical-align : text-top;*/
+/*  align-text     : right;*/
   margin-left    : 3px;
+  margin-right   : 2px;
 }
 
 div#position {
@@ -203,7 +207,7 @@ div#position {
 
 input[type="number"]#positionNum {
   width            : 5em;
-  font-size        : 10px;
+  font-size        : 10pt;
   vertical-align   : text-top;
   text-align       : right;
   background-color : lightgrey;
