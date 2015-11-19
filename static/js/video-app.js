@@ -160,6 +160,16 @@
     }
     return allPaused
   }
+
+  VideoContents.prototype.setPosition =
+    function VideoContents__setPosition(fsecs) {
+      'use strict';
+      var allSet = true
+      for (let i=0; i<this.contents.length; i+=1) {
+        allSet = this.contents[i].setPosition(fsecs) && allSet
+      }
+      return allSet
+    }
   
   VideoContents.prototype.seek = function VideoContents__seek(nsecs) {
     'use strict';
@@ -243,7 +253,8 @@
                }
     this._isFullscreen = false //assume not fullscreen to start !?!
     this.canPlay = undefined //set by 'canplay' event
-
+    this.videoWidth  = undefined //set in onLoadedData
+    this.videoHeight = undefined //set in onLoadedData
     /*
      * Create the canvas to paint the video onto
      */
@@ -275,7 +286,7 @@
     var $spinner = $( document.createElement('div') )
                    .attr('id', this.ids.spinnerDiv)
                    .addClass('spinner')
-    //.addClass('hide')
+                   .addClass('hide')
                    .append( this.$spinnerSym )
 
     this.$spinner = $spinner
@@ -362,6 +373,14 @@
         // display first frame in canvasEl
         //
         ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
+
+        debug('onLoadedData: $video[0].duration = %f', $video[0].duration)
+        videoControls.$positionRng[0].max = $video[0].duration
+
+        //console.log('onLoadedData: self.cfg.initTime = %f', self.cfg.initTime)
+        //videoControls.setPosition(self.cfg.initTime)
+        //videoContents.setPosition(self.cfg.initTime)
+        
       })
 
       //HTMLMediaElement Constant
@@ -437,9 +456,10 @@
         //           , e.target.id, videoEl.currentTime)
         //history.pushState(stateObj, "page 2", "bar.html");
 
-        //self.videoApp.videoControls.$position
-        //positionRngEl.value = e.target.currentTime
-        //positionTimEl.value = Math.floor(e.target.currentTime)
+        //debug('onTimeUpdate: e.target.currentTime = %f', e.target.currentTime)
+        var videoControls = self.videoApp.videoControls
+        videoControls.$positionRng[0].value = e.target.currentTime
+        videoControls.$positionNum[0].value = Math.floor(e.target.currentTime)
       })
 
       $video.on('ended', function onEnded(e){
@@ -524,8 +544,19 @@
     return this.isPaused()
   }
 
+  VideoContent.prototype.setPosition =
+    function VideoContent__setPosition(fsecs) {
+      debug('VideoContent__setPosition: fsecs = %f', fsecs)
+      this.$video[0].currentTime = fsecs
+      this.ctx.drawImage(this.$video[0], 0, 0, this.videoWidth, this.videoHeight)
+      return true
+    }
+
   VideoContent.prototype.seek = function VideoContent__seek(nsecs) {
-    this.$video[0].currentTime += nsecs
+    debug('VideoContent__seek: nsecs = %d', nsecs)
+    var newTime = this.$video[0].currentTime + nsecs
+    this.setPosition(newTime)
+    return true
   }
 
   VideoContent.prototype.setVolume = function VideoContent__setVolume(pct) {
@@ -615,7 +646,7 @@
     var cfg = _.cloneDeep(_cfg) || {}
     
     this.skipBackSecs = cfg.skipBackSecs || 10
-    this.skipForwSecs = cfg.skipForwSecs || 120
+    this.skipForwSecs = cfg.skipForwSecs || 30
 
     this._enabled = false
 
@@ -629,9 +660,10 @@
                , backDiv       : 'back'
                , volumeDiv     : 'volume'
                , volumeSym     : 'volumeSym'
+               , volumeSymDiv  : 'volumeSymDiv'
                , volumeRng     : 'volumeRng'
                , positionDiv   : 'position'
-               , positionTxt   : 'positionTxt'
+               , positionNum   : 'positionNum'
                , positionRng   : 'positionRng'
                , fullscreenDiv : 'fullscreen'
                , fullscreenSym : 'fullscreenSym'
@@ -644,10 +676,12 @@
     this.$backSym       = undefined
     this.$back          = undefined
     this.$volume        = undefined
+    this.$volumeSym     = undefined
+    this.$volumeSymDiv  = undefined
     this.$volumeRng     = undefined
     this.$position      = undefined
-    this.$positionTxt   = undefined
-    this.$positionRnt   = undefined
+    this.$positionNum   = undefined
+    this.$positionRng   = undefined
     this.$fullscreen    = undefined
     this.$fullscreenSym = undefined
 
@@ -736,34 +770,46 @@
     /*************************
      * Position Text & Range *
      *************************/
-    // need to do this.$position
+    this.$positionNum = $( document.createElement('input') )
+                        .attr('id', this.ids.positionNum)
+                        .attr('type', 'number')
+                        .attr('value', 0)
 
-    /*********************
-     * Fullscreen Button *
-     *********************/
-    this.$fullscreenSym = $( document.createElement('i') )
-                          .attr('id', this.ids.fullscreenSym)
-                          .addClass('fa')
-                          .addClass('fa-arrows-alt')
-
-    this.$fullscreen = $( document.createElement('div') )
-                       .attr('id', this.ids.fullscreenDiv)
-                       .addClass('control')
-                       .append( this.$fullscreenSym )
-
-    this.onFullscreenClickFn = function onFullscreenClick(e) {
-      debug('onFullscreenClick: called')
-
-      var videoContents = self.videoApp.videoContents
-
-      videoContents.toggleFullscreen()
-      //self.cssPositionControls()
+    this.onPositionNumInputFn = function onPositionNumInput(e) {
+      debug('onPositionNumInput: e.target.valueAsNumber = %f'
+           , e.target.valueAsNumber)
+      var val = e.target.valueAsNumber
+      self.setPosition(val)
+      self.videoApp.videoContents.setPosition(val)
     }
 
-    this.$dom.append( this.$fullscreen )
+    this.$positionRng = $( document.createElement('input') )
+                        .attr('id', this.ids.positionRng)
+                        .attr('type', 'range')
+                        .attr('min', 0)
+                        .attr('max', 300)
+                        .attr('value', 0)
+
+    this.onPositionRngInputFn = function onPositionRngInput(e) {
+      debug('onPositionRngInput: e.target.valueAsNumber = %f'
+           , e.target.valueAsNumber)
+
+      var val = e.target.valueAsNumber
+
+      self.setPosition(val)
+      self.videoApp.videoContents.setPosition(val)
+    }
+
+    this.$position = $( document.createElement('div') )
+                     .attr('id', this.ids.positionDiv)
+                     .addClass('control')
+                     .append( this.$positionNum )
+                     .append( this.$positionRng )
+
+    this.$dom.append( this.$position )
 
     /*****************
-     * Volume Button *
+     * Volume Range  *
      *****************/
     this.$volumeSym = $( document.createElement('i') )
                       .attr('id', this.ids.volumeSym)
@@ -772,6 +818,11 @@
     //.addClass('fa-volume-down')
     //.addClass('fa-volume-off')
 
+    this.$volumeSymDiv = $( document.createElement('div') )
+                         .attr('id', this.ids.volumeSymDiv)
+                         .append( this.$volumeSym )
+
+    
     this.onVolumeSymClickFn = function onVolumeSymClick(e) {
       var videoEl
       var videoContents = self.videoApp.videoContents
@@ -839,14 +890,44 @@
     this.$volume = $( document.createElement('div') )
                    .attr('id', this.ids.volumeDiv)
                    .addClass('control')
-                   .append( this.$volumeSym )
+                   .append( this.$volumeSymDiv )
                    .append( this.$volumeRng )
     
 
     this.$dom.append( this.$volume )
 
+    /*********************
+     * Fullscreen Button *
+     *********************/
+    this.$fullscreenSym = $( document.createElement('i') )
+                          .attr('id', this.ids.fullscreenSym)
+                          .addClass('fa')
+                          .addClass('fa-arrows-alt')
+
+    this.$fullscreen = $( document.createElement('div') )
+                       .attr('id', this.ids.fullscreenDiv)
+                       .addClass('control')
+                       .append( this.$fullscreenSym )
+
+    this.onFullscreenClickFn = function onFullscreenClick(e) {
+      debug('onFullscreenClick: called')
+
+      var videoContents = self.videoApp.videoContents
+
+      videoContents.toggleFullscreen()
+      //self.cssPositionControls()
+    }
+
+    this.$dom.append( this.$fullscreen )
+
     //this.enable()
   } //end: VideoControls()
+
+  VideoControls.prototype.setPosition =
+    function VideoControls__setPosition(fsecs) {
+      this.$positionNum[0].value = fsecs
+      this.$positionRng[0].value = fsecs
+    }
 
   VideoControls.prototype.cssPositionControls =
     function VideoControls__cssPositionControls() {
@@ -889,9 +970,11 @@
       this.$play.on('click', this.onPlayClickFn)
       this.$skip.on('click', this.onSkipClickFn)
       this.$back.on('click', this.onBackClickFn)
-      this.$fullscreen.on('click', this.onFullscreenClickFn)
-      this.$volumeSym.on('click', this.onVolumeSymClickFn)
+      this.$positionNum.on('input', this.onPositionNumInputFn)
+      this.$positionRng.on('input', this.onPositionRngInputFn)
+      this.$volumeSymDiv.on('click', this.onVolumeSymClickFn)
       this.$volumeRng.on('input', this.onVolumeRngInputFn)
+      this.$fullscreen.on('click', this.onFullscreenClickFn)
       
       return this._enabled = true
     }
