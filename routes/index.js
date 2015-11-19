@@ -21,6 +21,8 @@ module.exports = function(req, res){
 
   cfg['title'] = req.app.get('title')
 
+  cfg.debug = true
+  
   console.log("index: cfg = %j", { cfg: cfg })
   
   res.render('index', { pretty: true, cfg: cfg })

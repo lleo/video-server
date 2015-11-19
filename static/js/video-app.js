@@ -6,11 +6,21 @@
 (function(window, document, undefined) {
   var root = window //stupid I know :(
 
+  function debug() {
+    var args
+    var videoApp = VIDEO_APP.videoApp
+    if (videoApp.debug) {
+      args = [].slice.apply(arguments)
+      console.log.apply(console, args)
+    }
+  }
+  
   function VideoApp(_cfg) {
     var cfg = _.cloneDeep(_cfg) || {}
     var controls_cfg = cfg.controls || {}
 
     this.cfg = cfg
+    this.debug = !!cfg.debug
 
     var videoContents = new VideoContents(this)
     var videoControls = new VideoControls(controls_cfg, this)
@@ -29,7 +39,7 @@
 
     $('#videoStuff').append( videoContents.$dom )
     
-//    $('#videoStuff').append( videoControls.$dom )
+    //    $('#videoStuff').append( videoControls.$dom )
 
   } //end: VideoApp()
 
@@ -92,7 +102,7 @@
     }
 
   VideoContents.prototype.startBusy = function VideoContents__startBusy() {
-    console.log('VideoContents__startBusy:')
+    debug('VideoContents__startBusy:')
     
     if (this.contents.length) {
       this.contents[0].startBusy()
@@ -100,7 +110,7 @@
   }
 
   VideoContents.prototype.stopBusy = function VideoContents__stopBusy() {
-    console.log('VideoContents__stopBusy:')
+    debug('VideoContents__stopBusy:')
     
     if (this.contents.length) {
       this.contents[0].stopBusy()
@@ -120,13 +130,6 @@
       return allPaused
     }
     return
-    /*
-    //only examine the first videoContent assume the rest are the same
-    if (this.contents.length)
-      return this.contents[0].isPaused()
-    else
-      return
-    */
   }
 
   VideoContents.prototype.allPaused = function VideoContents__allPaused() {
@@ -220,11 +223,11 @@
         console.error('VideoContents__toggleFullscreen: no video contents this.contents.length < 1')
         return
       }
-  } //end: VideoContents__toggleFullscreen()
+    } //end: VideoContents__toggleFullscreen()
 
 
   function VideoContent(vidNum, volume, subdirs, file, videoApp) {
-    console.log('VideoContent() constructor')
+    debug('VideoContent() constructor')
 
     this.vidNum   = vidNum
     this.volume   = volume
@@ -272,7 +275,7 @@
     var $spinner = $( document.createElement('div') )
                    .attr('id', this.ids.spinnerDiv)
                    .addClass('spinner')
-                   //.addClass('hide')
+    //.addClass('hide')
                    .append( this.$spinnerSym )
 
     this.$spinner = $spinner
@@ -336,7 +339,7 @@
       
       var self = this
       $video.on('loadeddata', function onLoadedData(e) {
-        console.log("onLoadedData: e.target.id=%s", e.target.id)
+        debug("onLoadedData: e.target.id=%s", e.target.id)
         // 'loadeddata' means that the HTMLMediaElement has loaded enough
         // data to display one frame.
         //
@@ -350,8 +353,8 @@
         self.videoWidth  = $video[0].videoWidth
         self.videoHeight = $video[0].videoHeight
 
-        console.log("onLoadedData: width=%f; height=%f;"
-                   , self.videoWidth, self.videoHeight)
+        debug("onLoadedData: width=%f; height=%f;"
+             , self.videoWidth, self.videoHeight)
 
         $canvas[0].width  = self.videoWidth
         $canvas[0].height = self.videoHeight
@@ -372,12 +375,12 @@
 
       $video.on('canplay', function onCanPlay(e) {
         self.canPlay = self.$video[0].readyState === HTMLMediaElement.HAVE_ENOUGH_DATA
-        console.log("onCanPlay: %s.readyState = %s(%o); "
-                   + "set self<VideoContent>.canPlay = %o"
-                   , self.$video[0].id
-                   , MEC[self.$video[0].readyState]
-                   , self.$video[0].readyState
-                   , self.canPlay)
+        debug("onCanPlay: %s.readyState = %s(%o); "
+             + "set self<VideoContent>.canPlay = %o"
+             , self.$video[0].id
+             , MEC[self.$video[0].readyState]
+             , self.$video[0].readyState
+             , self.canPlay)
 
         videoControls.enable()
         videoControls.cssPositionControls()
@@ -385,7 +388,7 @@
       })
       
       $video.on('playing', function onPlaying(e){
-        console.log("onPlaying: e.target.id=%s", e.target.id)
+        debug("onPlaying: e.target.id=%s", e.target.id)
       })
 
       $video.on('play', function onPlayStartCanvasTimer(e) {
@@ -405,32 +408,32 @@
       })
 
       $video.on('pause', function onPauseMisc(e){
-        console.log("onPlayMisc: e.target.id=%s", e.target.id)
+        debug("onPlayMisc: e.target.id=%s", e.target.id)
         //do something ...maybe
       })
 
       $video.on('seeked', function onSeeked(e) {
         // display seeked frame when currentTime is manually changed
         //
-        console.log('onSeeked: redrawing canvas')
+        debug('onSeeked: redrawing canvas')
 
         //videoControls.enable() //FIXME: this is causing error messages
-        //console.log('onSeeked: after videoControls.enable()')
+        //debug('onSeeked: after videoControls.enable()')
         self.stopBusy()
         
         ctx.drawImage($video[0], 0, 0, self.videoWidth, self.videoHeight)
       })
       
       $video.on('seeking', function onSeeking(e){
-        console.log("onSeeking: e.target.id=%s", e.target.id)
+        debug("onSeeking: e.target.id=%s", e.target.id)
         self.startBusy()
-//        videoControls.disable()
+        //        videoControls.disable()
       })
 
       $video.on('timeupdate', function onTimeUpdate(e){
         // By observation Chrome seems to fire off every quarter second.
         //
-        //console.log("onTimeUpdate: e.target.id=%s; videoEl.currentTime=%f;"
+        //debug("onTimeUpdate: e.target.id=%s; videoEl.currentTime=%f;"
         //           , e.target.id, videoEl.currentTime)
         //history.pushState(stateObj, "page 2", "bar.html");
 
@@ -440,7 +443,7 @@
       })
 
       $video.on('ended', function onEnded(e){
-        console.log("onEnded: e.target.id=%s", e.target.id)
+        debug("onEnded: e.target.id=%s", e.target.id)
 
 
         //var $play = self.videoApp.videoControls.$play
@@ -453,9 +456,9 @@
       })
 
       function onFullscreenChange(e) {
-        console.log('onFullscreenChange: e = %o', e)
+        debug('onFullscreenChange: e = %o', e)
         var event = e.originalEvent.type
-        console.log('onFullscreenChange: caused by %o', event)
+        debug('onFullscreenChange: caused by %o', event)
         self.fullscreenChanged(e)
       }
       $(document).on('webkitfullscreenchange '
@@ -467,11 +470,11 @@
     } //end: VideoContent__setupVideo()
 
   VideoContent.prototype.startBusy = function VideoContent__startBusy() {
-    console.log('VideoContent__startBusy:')
+    debug('VideoContent__startBusy:')
   }
 
   VideoContent.prototype.stopBusy = function VideoContent__stopBusy() {
-    console.log('VideoContent__stopBusy:')
+    debug('VideoContent__stopBusy:')
   }
   
   VideoContent.prototype.fullscreenChanged =
@@ -553,23 +556,23 @@
         //var el = this.$video[0]
         var el = this.$display[0]
         if (el.requestFullscreen) {
-          console.log('VideoContent__toggleFullscreen: used requestFullscreen')
+          debug('VideoContent__toggleFullscreen: used requestFullscreen')
           el.requestFullscreen()
         }
         else if (el.msRequestFullscreen) {
-          console.log('VideoContent__toggleFullscreen: used msRequestFullscreen')
+          debug('VideoContent__toggleFullscreen: used msRequestFullscreen')
           el.msRequestFullscreen()
         }
         else if (el.mozRequestFullScreen) {
-          console.log('VideoContent__toggleFullscreen: used mozRequestFullScreen')
+          debug('VideoContent__toggleFullscreen: used mozRequestFullScreen')
           el.mozRequestFullScreen()
         }
         else if (el.webkitRequestFullscreen) {
-          console.log('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
+          debug('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
           el.webkitRequestFullscreen()
         }
         else {
-          console.log('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
+          debug('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
           alert("requestFullScreen not implemented by this browser")
           return
         }
@@ -579,23 +582,23 @@
       else {
         // try to cancel fullscreen
         if (document.cancelFullScreen) {
-          console.log('VideoContent__toggleFullscreen: used document.cancelFullScreen')
+          debug('VideoContent__toggleFullscreen: used document.cancelFullScreen')
           document.cancelFullScreen()
         }
         else if (document.msExitFullscreen) {
-          console.log('VideoContent__toggleFullscreen: used document.msExitFullscreen')
+          debug('VideoContent__toggleFullscreen: used document.msExitFullscreen')
           document.msExitFullscreen()
         }
         else if (document.mozCancelFullScreen) {
-          console.log('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
+          debug('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
           document.mozCancelFullScreen()
         }
         else if (document.webkitCancelFullScreen) {
-          console.log('VideoContent__toggleFullscreen: used document.webkitCancelFullScreen')
+          debug('VideoContent__toggleFullscreen: used document.webkitCancelFullScreen')
           document.webkitCancelFullScreen()
         }
         else {
-          console.log('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
+          debug('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
           alert('cancelFullScreen not implemented by this browser')
           return
         }
@@ -652,6 +655,11 @@
                 .attr('id', this.ids.div)
                 .addClass('disabled')
 
+    var self = this //for callbacks
+
+    /* *************
+     * Play Button *
+     *************** */
     this.$playSym = $( document.createElement('i') )
                     .attr('id', this.ids.playSym)
                     .addClass('fa')
@@ -662,20 +670,18 @@
                  .addClass('control')
                  .append( this.$playSym )
     
-    var self = this
-
     this.onPlayClickFn = function onPlayClick(e) {
       var videoContents = self.videoApp.videoContents
       
-      console.log('onPlayClick: videoContents.isPaused() = %o', videoContents.isPaused())
+      debug('onPlayClick: videoContents.isPaused() = %o', videoContents.isPaused())
       if ( videoContents.isPaused() ) {
-        console.log('onPlayClick: calling videoContents.play()')
+        debug('onPlayClick: calling videoContents.play()')
         videoContents.play()
         self.$playSym.removeClass('fa-play')
         self.$playSym.addClass('fa-pause')
       }
       else {
-        console.log('onPlayClick: calling videoContents.pause()')
+        debug('onPlayClick: calling videoContents.pause()')
         videoContents.pause()
         self.$playSym.removeClass('fa-pause')
         self.$playSym.addClass('fa-play')
@@ -684,6 +690,10 @@
     
     this.$dom.append( this.$play )
 
+
+    /***************
+     * Skip Button *
+     ***************/
     this.$skipSym = $( document.createElement('i') )
                     .attr('id', this.ids.skipSym)
                     .addClass('fa')
@@ -695,13 +705,16 @@
                  .append( this.$skipSym )
 
     this.onSkipClickFn = function onSkipClick(e) {
-      console.log('onSkipClick: seeking %d secs', self.skipForwSecs)
+      debug('onSkipClick: seeking %d secs', self.skipForwSecs)
       var videoContents = self.videoApp.videoContents
       videoContents.seek(self.skipForwSecs)
     }
     
     this.$dom.append( this.$skip )
 
+    /***************
+     * Back Button *
+     ***************/
     this.$backSym = $( document.createElement('i') )
                     .attr('id', this.ids.backSym)
                     .addClass('fa')
@@ -713,15 +726,21 @@
                  .append( this.$backSym )
 
     this.onBackClickFn = function onBackClick(e) {
-      console.log('onBackClick: seeking %d secs', -self.skipBackSecs)
+      debug('onBackClick: seeking %d secs', -self.skipBackSecs)
       var videoContents = self.videoApp.videoContents
       videoContents.seek(-self.skipBackSecs)
     }
 
     this.$dom.append( this.$back )
 
+    /*************************
+     * Position Text & Range *
+     *************************/
     // need to do this.$position
 
+    /*********************
+     * Fullscreen Button *
+     *********************/
     this.$fullscreenSym = $( document.createElement('i') )
                           .attr('id', this.ids.fullscreenSym)
                           .addClass('fa')
@@ -733,7 +752,7 @@
                        .append( this.$fullscreenSym )
 
     this.onFullscreenClickFn = function onFullscreenClick(e) {
-      console.log('onFullscreenClick: called')
+      debug('onFullscreenClick: called')
 
       var videoContents = self.videoApp.videoContents
 
@@ -743,26 +762,61 @@
 
     this.$dom.append( this.$fullscreen )
 
+    /*****************
+     * Volume Button *
+     *****************/
     this.$volumeSym = $( document.createElement('i') )
                       .attr('id', this.ids.volumeSym)
                       .addClass('fa')
                       .addClass('fa-volume-up')
-                      //.addClass('fa-volume-down')
-                      //.addClass('fa-volume-off')
+    //.addClass('fa-volume-down')
+    //.addClass('fa-volume-off')
 
     this.onVolumeSymClickFn = function onVolumeSymClick(e) {
-      if (self.$volume[0].muted) {
-        this.removeClass('fa-volume-off')
-        if (self.$volume[0].volume < 0.5) {
-          self.$volumeSym.removeClass('fa-volume-up')
-          self.$volumeSym.addClass('fa-volume-down')
-        }
-        else {
-          self.$volumeSym.removeClass('fa-volume-down')
-          self.$volumeSym.addClass('fa-volume-up')
-        }
+      var videoEl
+      var videoContents = self.videoApp.videoContents
+      if (videoContents.contents.length) {
+        videoEl = videoContents.contents[0].$video[0]
       }
-    }
+      else {
+        console.error('onVolumeSymClick: videoContents.contents.length = 0')
+        return
+      }
+      
+      if (videoEl.muted) {
+        debug('onVolumeSymClick: muted before volume = %f', videoEl.volume)
+        videoEl.muted = false
+        debug('onVolumeSymClick: muted after volume = %f', videoEl.volume)
+
+        if ( self.$volumeSym.hasClass('fa-volume-off') ) {
+          self.$volumeSym.removeClass('fa-volume-off')
+
+          if (videoEl.volume < 0.5) {
+            self.$volumeSym.addClass('fa-volume-down')
+          }
+          else {
+            self.$volumeSym.addClass('fa-volume-up')
+          }
+        }
+        
+      }
+      else { //volume on
+        debug('onVolumeSymClick: unmuted before volume = %f', videoEl.volume)
+        videoEl.muted = true
+        debug('onVolumeSymClick: unmuted after volume = %f', videoEl.volume)
+
+        if ( self.$volumeSym.hasClass('fa-volume-down') ) {
+          self.$volumeSym.removeClass('fa-volume-down')
+        }
+        if ( self.$volumeSym.hasClass('fa-volume-up') ) {
+          self.$volumeSym.removeClass('fa-volume-up')
+        }
+
+        self.$volumeSym.addClass('fa-volume-off')
+        return
+      }
+      
+    } //end: onVolumeSymClick()
 
     this.$volumeRng = $( document.createElement('input') )
                       .attr('id', this.ids.volumeRng)
@@ -774,7 +828,7 @@
 
     this.onVolumeRngInputFn = function onVolumeRngInput(e) {
       var volume = e.target.valueAsNumber
-      console.log('onVolumeRngInput: volume = %d', volume)
+      debug('onVolumeRngInput: volume = %d', volume)
 
       var videoContents = self.videoApp.videoContents
 
@@ -839,7 +893,7 @@
       this.$volumeSym.on('click', this.onVolumeSymClickFn)
       this.$volumeRng.on('input', this.onVolumeRngInputFn)
       
-      this._enabled = true
+      return this._enabled = true
     }
   }
 
@@ -856,16 +910,15 @@
     }
   }
 
-  VideoContents.prototype.setVolume = function VideoControls__setVolume(pct) {
+  VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
     'use strict';
     if (pct < 0) pct = 0
     if (pct > 100) pct = 100
-    console.log('VideoControls__setVolume: pct = %d', pct)
-    console.log('VideoControls__setVolume: doing nothing for now')
+    debug('VideoContents__setVolume: pct = %d', pct)
 
     var allVolumeSet = true
     for (let i=0; i<this.contents.length; i+=1) {
-      allVolumeSet = this.contents[i].setVolume(0) && allVolumeSet
+      allVolumeSet = this.contents[i].setVolume(pct) && allVolumeSet
     }
     return allVolumeSet
   }
@@ -915,7 +968,7 @@
       var i
       var dirSelect
       
-      console.log('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
+      debug('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
 
       self.selectedVolume = val
       
@@ -935,7 +988,7 @@
       }
 
       function lookupSuccess(data) {
-        console.log('VolumeBrowser: selectChanged: lookupSuccess: data =', data)
+        debug('VolumeBrowser: selectChanged: lookupSuccess: data =', data)
         self.addDirSelect(data.dirs, data.files)
       }
 
@@ -954,9 +1007,9 @@
 
   VolumeBrowser.prototype.addDirSelect =
     function VolumeBrowser__addDirSelect(dirs, files) {
-      console.log('VolumeBrowser__addDirSelect: called')
-      console.log('VolumeBrowser__addDirSelect: dirs =', dirs)
-      console.log('VolumeBrowser__addDirSelect: files =', files)
+      debug('VolumeBrowser__addDirSelect: called')
+      debug('VolumeBrowser__addDirSelect: dirs =', dirs)
+      debug('VolumeBrowser__addDirSelect: files =', files)
 
       var nextNum = this.dirSelects.length
 
@@ -976,7 +1029,7 @@
         var val = $(this).val()
         var i
 
-        console.log('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
+        debug('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
 
         //if the captured number of DirSelects < the current number of DirSelects
         if (numDirSelects < self.dirSelects.length) {
@@ -999,7 +1052,7 @@
           self.subdirs.push(val)
 
           function lookupSuccess(data) {
-            console.log('VolumeBrowser__addDirSelect: disSelectChanged: lookupSuccess; data = ', data)
+            debug('VolumeBrowser__addDirSelect: disSelectChanged: lookupSuccess; data = ', data)
             self.addDirSelect(data.dirs, data.files)
           }
 
@@ -1031,12 +1084,12 @@
 
   VolumeBrowser.prototype.fileSelected =
     function VolumeBrowser__fileSelected(file) {
-      console.log('VolumeBrowser__fileSelected: fqfn:'
-                 + '"' + this.selectedVolume + '"/'
-                 + this.subdirs.join('/')
-                 + '/'
-                 + file
-                 )
+      debug('VolumeBrowser__fileSelected: fqfn:'
+           + '"' + this.selectedVolume + '"/'
+           + this.subdirs.join('/')
+           + '/'
+           + file
+           )
       var volume = this.selectedVolume
       var subdirs = _.clone(this.subdirs)
       
