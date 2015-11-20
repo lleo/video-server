@@ -371,6 +371,7 @@
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.ids.div)
                 .addClass('videoContent')
+                .addClass('nocursor')
                 .append( this.$video )
 
     if (0 == vidNum) {
@@ -392,6 +393,65 @@
       //var videoControls = this.videoApp.videoControls
       
       var self = this
+
+      var timerId
+        , timerFirstTime = true
+        , overControls = false
+      function onMouseMove() {
+        var videoControls = self.videoApp.videoControls
+
+        function longTimerFn() {
+          if (!overControls && !videoControls.$dom.hasClass('hide'))
+            videoControls.$dom.addClass('hide')
+
+          if (!overControls && !self.$dom.hasClass('nocursor'))
+            self.$dom.addClass('nocursor')
+
+          timerFirstTime = true
+          timerId = undefined
+        }
+        function shortTimerFn() {
+          self.$dom.on('mousemove', onMouseMove)
+
+          if (timerId || timerFirstTime) {
+            clearTimeout(timerId)
+            timerFirstTime = false
+            timerId = setTimeout(longTimerFn, 2000)
+          }
+        }
+
+        self.$dom.off('mousemove', self.onMouseMoveFn)
+
+        if ( videoControls.$dom.hasClass('hide') )
+          videoControls.$dom.removeClass('hide')
+
+        if ( self.$dom.hasClass('nocursor') )
+          self.$dom.removeClass('nocursor')
+
+        setTimeout(shortTimerFn, 50)
+      }
+      this.$dom.on('mousemove', onMouseMove)
+
+      function onMouseEnter(e) {
+        overControls = true
+      }
+      function onMouseLeave(e) {
+        var videoControls = self.videoApp.videoControls
+        overControls = false
+        function timerFn() {
+          if ( !overControls && !videoControls.$dom.hasClass('hide') )
+            videoControls.$dom.addClass('hide')
+
+          if ( !overControls && !self.$dom.hasClass('nocursor') )
+            self.$dom.addClass('nocursor')
+
+          timerFirstTime = true
+          timerId = undefined
+        }
+        setTimeout(timerFn, 50)
+      }
+      self.videoApp.videoControls.$dom.on('mouseenter', onMouseEnter)
+      self.videoApp.videoControls.$dom.on('mouseleave', onMouseLeave)
 
       $video.on('loadeddata', function onLoadedData(e) {
         info("onLoadedData: e.target.id=%s", e.target.id)
@@ -699,6 +759,7 @@
     this._enabled = false
 
     this.ids = { div           : 'videoControls'
+               , flexWrapper   : 'flexWrapper'
                , playSym       : 'playSym'
                , pauseSym      : 'pauseSym'
                , playDiv       : 'play'
@@ -733,9 +794,15 @@
     this.$fullscreen    = undefined
     this.$fullscreenSym = undefined
 
+    this.$flexWrapper = $( document.createElement('div') )
+                        .attr('id', this.ids.flexWrapper)
+    
+    
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.ids.div)
                 .addClass('disabled')
+                .addClass('hide')
+                .append( this.$flexWrapper )
 
     var self = this //for callbacks
 
@@ -770,7 +837,7 @@
       }
     }
     
-    this.$dom.append( this.$play )
+    this.$flexWrapper.append( this.$play )
 
 
     /***************
@@ -792,7 +859,7 @@
       videoContents.seek(self.skipForwSecs)
     }
     
-    this.$dom.append( this.$skip )
+    this.$flexWrapper.append( this.$skip )
 
     /***************
      * Back Button *
@@ -813,7 +880,7 @@
       videoContents.seek(-self.skipBackSecs)
     }
 
-    this.$dom.append( this.$back )
+    this.$flexWrapper.append( this.$back )
 
     /*************************
      * Position Text & Range *
@@ -854,7 +921,7 @@
                      .append( this.$positionNum )
                      .append( this.$positionRng )
 
-    this.$dom.append( this.$position )
+    this.$flexWrapper.append( this.$position )
 
     /*****************
      * Volume Range  *
@@ -941,7 +1008,7 @@
                    .append( this.$volumeRng )
     
 
-    this.$dom.append( this.$volume )
+    this.$flexWrapper.append( this.$volume )
 
     /*********************
      * Fullscreen Button *
@@ -965,7 +1032,7 @@
       //self.cssPositionControls()
     }
 
-    this.$dom.append( this.$fullscreen )
+    this.$flexWrapper.append( this.$fullscreen )
 
     //this.enable()
   } //end: VideoControls()
