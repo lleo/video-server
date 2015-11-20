@@ -505,10 +505,12 @@
   VideoContent.prototype.startBusy = function VideoContent__startBusy() {
     info('VideoContent__startBusy:')
     var videoControls = this.videoApp.videoControls
-    
-    //disable the controls
-    videoControls.disable()
-    
+
+    if (0 == this.vidNum) {
+      //disable the controls
+      videoControls.disable()
+    }
+
     //remove the hide class from the $spinner
     if ( this.$spinner.hasClass('hide') ) {
       info('VideoContent__startBusy: $spinner has "hide" class')
@@ -521,8 +523,10 @@
     info('VideoContent__stopBusy:')
     var videoControls = this.videoApp.videoControls
 
-    //enable the controls
-    videoControls.enable()
+    if (0 == this.vidNum) {
+      //enable the controls
+      videoControls.enable()
+    }
 
     //add the hide class from the $spinner
     if ( !this.$spinner.hasClass('hide') ) {
