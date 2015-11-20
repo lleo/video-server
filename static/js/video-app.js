@@ -136,6 +136,9 @@
       while (this.contents.length) {
         this.contents.pop().$dom.remove()
       }
+      var videoControls = this.videoApp.videoControls
+      videoControls.disable()
+      videoControls.reset()
 
       var vidNum = this.contents.length
       
@@ -944,6 +947,43 @@
         $controls.css({top: 10, left: offset})
       }
     }
+
+  VideoControls.prototype.setVolume = function VideoControls__setVolume(pct) {
+    pct = Math.floor(pct) //want it to be an integer
+    if (pct < 0) pct = 0
+    if (pct > 100) pct = 100
+    this.$volumeRng[0].value = pct
+
+    if (this.$playSym.hasClass('fa-volume-off')) {
+      this.removeClass('fa-volume-off')
+    }
+    if (pct < 50) {
+      if ( this.$playSym.hasClass('fa-volume-up') ) {
+        this.$playSym.removeClass('fa-volume-up')
+      }
+      this.$playSym.addClass('fa-volume-down')
+    }
+    else {
+      if ( this.$playSym.hasClass('fa-volume-down') ) {
+        this.$playSym.removeClass('fa-voluem-down')
+      }
+      this.$playSym.addClass('fa-volume-up')
+    }
+  }
+
+  VideoControls.prototype.setPosition =
+    function VideoControls__setPosition(fsecs) {
+      if (fsecs < 0) fsecs = 0
+      this.$positionRng[0].value = fsecs
+      this.$positionNum[0].value = Math.floor(fsecs)
+    }
+
+  VideoControls.prototype.setPlayable = function VideoControls__setPlayable() {
+    if (this.$playSym.hasClass('fa-pause')) {
+      this.$playSym.removeClass('fa-pause')
+      this.$playSym.addClass('fa-play')
+    }
+  }
   
   VideoControls.prototype.reset = function VideoControls__reset() {
     this.disable()
@@ -952,6 +992,8 @@
       this.$playSym.addClass('fa-play')
     }
     this.setVolume(100)
+    this.setPosition(0)
+    this.setPlayable()
   }
 
   VideoControls.prototype.isEnabled = function VideoControls__isEnabled() {
@@ -1178,9 +1220,7 @@
       var subdirs = _.clone(this.subdirs)
       
       //add addVideoContentButton
-      this.addVideoContentButton = new LaunchVideoContentButton(volume,
-                                                                subdirs,
-                                                                file)
+      this.addVideoContentButton = new LaunchVideoContentButton(file)
 
       this.$dom.after( this.addVideoContentButton.$dom )
 
@@ -1248,9 +1288,7 @@
 
   } //end: DirSelect()
 
-  function LaunchVideoContentButton(volume, subdirs, file) {
-    this.volume  = volume
-    this.subdirs = _.clone(subdirs)
+  function LaunchVideoContentButton(file) {
     this.file    = file
     this.id = 'launchButton'
     
