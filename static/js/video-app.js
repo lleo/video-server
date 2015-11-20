@@ -338,7 +338,7 @@
 
     var $video = $( document.createElement('video') )
                  .attr('id', this.ids.video )
-                 .attr('controls', true)
+                 //.attr('controls', true)
                  .addClass('videoDisplay')
                  .append($source)
 
@@ -796,8 +796,8 @@
 
     this.$flexWrapper = $( document.createElement('div') )
                         .attr('id', this.ids.flexWrapper)
-    
-    
+
+
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.ids.div)
                 .addClass('disabled')
