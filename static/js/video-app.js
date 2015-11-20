@@ -504,10 +504,32 @@
 
   VideoContent.prototype.startBusy = function VideoContent__startBusy() {
     info('VideoContent__startBusy:')
+    var videoControls = this.videoApp.videoControls
+    
+    //disable the controls
+    videoControls.disable()
+    
+    //remove the hide class from the $spinner
+    if ( this.$spinner.hasClass('hide') ) {
+      info('VideoContent__startBusy: $spinner has "hide" class')
+      info('VideoContent__startBusy: removing "hide" class to $spinner')
+      this.$spinner.removeClass('hide')
+    }
   }
 
   VideoContent.prototype.stopBusy = function VideoContent__stopBusy() {
     info('VideoContent__stopBusy:')
+    var videoControls = this.videoApp.videoControls
+
+    //enable the controls
+    videoControls.enable()
+
+    //add the hide class from the $spinner
+    if ( !this.$spinner.hasClass('hide') ) {
+      info('VideoContent_stopBusy: $spinner does not have "hide" class')
+      info('VideoContent__stopBusy: adding "hide" class to $spinner')
+      this.$spinner.addClass('hide')
+    }
   }
   
   VideoContent.prototype.fullscreenChanged =
@@ -517,8 +539,12 @@
 
       var self = this
 
-      /* For some reason 
-       * 
+      /* This is called only from the fullscreenchange event.
+       * For some reason that fires off before the new fullscreen element
+       * has its dimensions set. So, I have inserted this delayed function
+       * to set the positioning of the spinner and controls.
+       * 500ms seems to be enought most of the time on my MacBook Pro
+       * (early 2011).
        */
       setTimeout(function() {
         self.cssCenterSpinner()
@@ -1016,13 +1042,14 @@
     if (!this.isEnabled()) {
       if ( this.$dom.hasClass('disabled') ) {
         this.$dom.removeClass('disabled')
-        this.$dom.addClass('enabled')
       }
       else {
-        console.error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
+        error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
         //return;
       }
-      
+
+      if ( !this.$dom.hasClass('enabled') ) this.$dom.addClass('enabled')
+
       this.$play.on('click', this.onPlayClickFn)
       this.$skip.on('click', this.onSkipClickFn)
       this.$back.on('click', this.onBackClickFn)
@@ -1038,8 +1065,16 @@
 
   VideoControls.prototype.disable = function VideoControls__disable() {
     if (this.isEnabled()) {
-      this.$dom.removeClass('enabled')
-      this.$dom.addClass('enabled')
+      if ( this.$dom.hasClass('enabled') ) {
+        this.$dom.removeClass('enabled')
+      }
+      else {
+        error('WTF!!! VideoControls__disable: this.isEnabled() && !this.$dom.hasClass("enabled")')
+        //return
+      }
+
+      if ( !this.$dom.hasClass('disabled') ) this.$dom.addClass('disabled')
+
       this.$play.off('click', this.onPlayClickFn)
       this.$skip.off('click', this.onSkipClickFn)
       this.$back.off('click', this.onBackClickFn)
@@ -1210,7 +1245,7 @@
           var errmsg = 'selected val='
                      + JSON.stringify(val)
                      + ' is neither in dirs[] nor files[]'
-          console.error(errmsg)
+          error(errmsg)
           throw new Error(errmsg)
         }
 
