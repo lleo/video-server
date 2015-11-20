@@ -21,7 +21,12 @@ module.exports = function(req, res){
 
   cfg['title'] = req.app.get('title')
 
-  cfg.debug = true
+  /* From video-app.js:21 or so
+   * var levels    = ['info', 'warn', 'crit', 'none', 'error']
+   * 'none' is a place holder for no logging except error
+   * There is really only three optional levels info, warn, and crit.
+   */
+  cfg.debug = 'info' // or above will be logged
   
   console.log("index: cfg = %j", { cfg: cfg })
   
