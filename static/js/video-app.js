@@ -28,6 +28,8 @@
       var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
       if (info_lvl >= debug_lvl) {
         args = _slice.apply(arguments)
+        if (args.length == 0) args.push('')
+        args[0] = '[INFO] '+args[0]
         console.log.apply(console, args)
       }
     }
@@ -36,6 +38,8 @@
       var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
       if (warn_lvl >= debug_lvl) {
         args = _slice.apply(arguments)
+        if (args.length == 0) args.push('')
+        args[0] = '[WARN] '+args[0]
         console.log.apply(console, args)
       }
     }
@@ -44,6 +48,8 @@
       var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
       if (crit_lvl >= debug_lvl) {
         args = _slice.apply(arguments)
+        if (args.length == 0) args.push('')
+        args[0] = '[CRIT] '+args[0]
         console.log.apply(console, args)
       }
     }
@@ -51,6 +57,8 @@
     function error() {
       var args = _slice.apply(arguments)
         , debug_lvl = VIDEO_APP.videoApp.debugLvl
+      if (args.length == 0) args.push('')
+      args[0] = '[ERROR] '+args[0]
       console.error.apply(console, args)
     }
 
@@ -483,7 +491,7 @@
       function onFullscreenChange(e) {
         info('onFullscreenChange: e = %o', e)
         var event = e.originalEvent.type
-        info('onFullscreenChange: caused by %o', event)
+        warn('onFullscreenChange: caused by %o', event)
         self.fullscreenChanged(e)
       }
       $(document).on('webkitfullscreenchange '
@@ -508,6 +516,10 @@
       var $fullscreenSym = videoControls.$fullscreenSym
 
       var self = this
+
+      /* For some reason 
+       * 
+       */
       setTimeout(function() {
         self.cssCenterSpinner()
         videoControls.cssPositionControls()
