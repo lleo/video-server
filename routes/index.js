@@ -14,10 +14,9 @@ module.exports = function(req, res){
   console.log("app_cfg =", util.inspect(app_cfg, {depth:null}))
   
   var cfg = {}
-  cfg['video volumes'] = u.clone(app_cfg.order)
+  cfg['video root names'] = u.clone(app_cfg.order)
 
-  console.log('index: cfg["video volumes"] =', cfg['video volumes'])
-  console.log("index: HERE NOW")
+  console.log('index: cfg["video root names"] =', cfg['video root names'])
 
   cfg['title'] = req.app.get('title')
 

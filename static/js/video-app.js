@@ -78,7 +78,7 @@
 
     var videoContents = new VideoContents(this)
     var videoControls = new VideoControls(controls_cfg, this)
-    var volumeBrowser = new VolumeBrowser(cfg['video volumes'], this)
+    var volumeBrowser = new VolumeBrowser(cfg['video root names'], this)
 
     this.volumeBrowser = volumeBrowser
 
