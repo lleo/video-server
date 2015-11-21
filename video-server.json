@@ -1,4 +1,4 @@
-{ "video directories" :
+{ "video roots" :
   [ { "name" :"App Local",
       "fqdn" : "/Users/seanegan/prj/node/apps/video-server/videos"
     },
