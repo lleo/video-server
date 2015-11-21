@@ -50,7 +50,7 @@ function streamVideo(req, res, next) {
   //var file = req.params[2]
   
   var app_cfg = app.get('app config by name')
-  var vid_fqdn = app_cfg['video directories'][volume].fqdn
+  var vid_fqdn = app_cfg['video roots'][volume].fqdn
 
   var vid_path = [vid_fqdn]
   vid_path = vid_path.concat(subdirs)
