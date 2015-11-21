@@ -130,7 +130,7 @@
   }
 
   VideoContents.prototype.addVideoContent =
-    function VideoContents__addVideoContent(volume, subdirs, file) {
+    function VideoContents__addVideoContent(root, subdirs, file) {
       'use strict';
 
       /* Remove any video content that exists
@@ -150,7 +150,7 @@
 
       var vidNum = this.contents.length
       
-      var videoContent = new VideoContent(vidNum, volume, subdirs, file,
+      var videoContent = new VideoContent(vidNum, root, subdirs, file,
                                           this.videoApp)
 
       this.contents.push(videoContent)
@@ -293,11 +293,11 @@
     } //end: VideoContents__toggleFullscreen()
 
 
-  function VideoContent(vidNum, volume, subdirs, file, videoApp) {
+  function VideoContent(vidNum, root, subdirs, file, videoApp) {
     info('VideoContent() constructor')
 
     this.vidNum   = vidNum
-    this.volume   = volume
+    this.root     = root
     this.subdirs  = subdirs
     this.file     = file
     this.videoApp = videoApp
@@ -316,7 +316,7 @@
     /*
      * Create the video DOM element. Start with the SourceElement first
      */
-    var parts = ['/stream', volume]
+    var parts = ['/stream', root]
     //if (subdirs.length) parts.push( subdirs.join('/') )
     parts = parts.concat(subdirs)
     parts.push(file)
@@ -1168,17 +1168,17 @@
     return allVolumeSet
   }
   
-  function FileBrowser(volumeNames, videoApp) {
-    /* volumeNames = [ name_1, name_2, ..., name_n]
+  function FileBrowser(rootNames, videoApp) {
+    /* rootNames = [ name_1, name_2, ..., name_n]
      */
     this.videoApp = videoApp
-    this.ids = { div: 'volumeBrowser'
-               , select: 'volumeBrowserSelect'
-               , wrapDiv: 'volumeBrowserSelectWrapDiv'
+    this.ids = { div: 'fileBrowser'
+               , select: 'rootBrowserSelect'
+               , wrapDiv: 'rootBrowserSelectWrapDiv'
                }
     
-    this.volumeNames    = volumeNames
-    this.selectedVolume = undefined
+    this.rootNames    = rootNames
+    this.selectedRoot = undefined
     this.subdirs        = []
     this.dirSelects     = [] //should be dirSelects.length == subdirs.length + 1 
     this.addVideoContentButton = undefined
@@ -1186,24 +1186,24 @@
 
     this.$dom = $(document.createElement('div'))
                 .attr('id', this.ids.div)
-                .addClass('volumeSelector')
+                //.addClass('rootSelector')
 
     var $select = $(document.createElement('select'))
                   .attr('id', this.ids.select)
-                  .attr('size', this.volumeNames.length)
-                  .addClass('volumeSelector')
+                  .attr('size', this.rootNames.length)
+                  //.addClass('rootSelector')
 
-    for (var i=0; i<this.volumeNames.length; i+=1) {
+    for (var i=0; i<this.rootNames.length; i+=1) {
       $select.append(
         $(document.createElement('option'))
-        .attr('value', this.volumeNames[i])
-        .append(this.volumeNames[i])
+        .attr('value', this.rootNames[i])
+        .append(this.rootNames[i])
       )
     }
 
     this.$dom.append( $(document.createElement('div'))
                       .attr('id', this.ids.wrapDiv)
-                      .addClass('wrapVolumeSelect')
+                      //.addClass('wrapRootSelect')
                       .append( $select )
                     )
 
@@ -1215,7 +1215,7 @@
       
       info('FileBrowser: selectChanged: val = '+JSON.stringify(val))
 
-      self.selectedVolume = val
+      self.selectedRoot = val
       
       if (self.dirSelects.length > 0) {
         //reset the DOM
@@ -1248,7 +1248,7 @@
     } //end: selectChanged()
     
     $select.change( selectChanged )
-  } //end: VolumeBroswer()
+  } //end: FileBroswer()
 
   FileBrowser.prototype.addDirSelect =
     function FileBrowser__addDirSelect(dirs, files) {
@@ -1282,7 +1282,7 @@
             self.dirSelects.pop().$dom.remove()
           }
 
-          //truncate VolumeBroswer's subdirs array
+          //truncate FileBrowser's subdirs array
           self.subdirs.length = numDirSelects-1
         }
         if (self.addVideoContentButton) {
@@ -1302,7 +1302,7 @@
 
           $.ajax({ url     : 'lookup'
                  , type    : 'GET'
-                 , data    : { root    : self.selectedVolume
+                 , data    : { root    : self.selectedRoot
                              , subdirs : self.subdirs
                              }
                  , success : lookupSuccess
@@ -1329,12 +1329,12 @@
   FileBrowser.prototype.fileSelected =
     function FileBrowser__fileSelected(file) {
       info('FileBrowser__fileSelected: fqfn:'
-          + '"' + this.selectedVolume + '"/'
+          + '"' + this.selectedRoot + '"/'
           + this.subdirs.join('/')
           + '/'
           + file
           )
-      var volume = this.selectedVolume
+      var root = this.selectedRoot
       var subdirs = _.clone(this.subdirs)
       
       //add addVideoContentButton
@@ -1345,7 +1345,7 @@
       var self = this
       function addVideoContent(e) {
         self.addVideoContentButton.$dom.remove()
-        self.videoApp.videoContents.addVideoContent(volume, subdirs, file)
+        self.videoApp.videoContents.addVideoContent(root, subdirs, file)
       }
       this.addVideoContentButton.$dom.click( addVideoContent )
     } //end: FileBrowser__fileSelected()
