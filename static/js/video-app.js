@@ -78,7 +78,7 @@
 
     var videoContents = new VideoContents(this)
     var videoControls = new VideoControls(controls_cfg, this)
-    var volumeBrowser = new VolumeBrowser(cfg['video root names'], this)
+    var volumeBrowser = new FileBrowser(cfg['video root names'], this)
 
     this.volumeBrowser = volumeBrowser
 
@@ -1168,7 +1168,7 @@
     return allVolumeSet
   }
   
-  function VolumeBrowser(volumeNames, videoApp) {
+  function FileBrowser(volumeNames, videoApp) {
     /* volumeNames = [ name_1, name_2, ..., name_n]
      */
     this.videoApp = videoApp
@@ -1213,7 +1213,7 @@
       var i
       var dirSelect
       
-      info('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
+      info('FileBrowser: selectChanged: val = '+JSON.stringify(val))
 
       self.selectedVolume = val
       
@@ -1233,7 +1233,7 @@
       }
 
       function lookupSuccess(data) {
-        info('VolumeBrowser: selectChanged: lookupSuccess: data =', data)
+        info('FileBrowser: selectChanged: lookupSuccess: data =', data)
         self.addDirSelect(data.dirs, data.files)
       }
 
@@ -1250,10 +1250,10 @@
     $select.change( selectChanged )
   } //end: VolumeBroswer()
 
-  VolumeBrowser.prototype.addDirSelect =
-    function VolumeBrowser__addDirSelect(dirs, files) {
-      info('VolumeBrowser__addDirSelect: dirs =', dirs)
-      info('VolumeBrowser__addDirSelect: files =', files)
+  FileBrowser.prototype.addDirSelect =
+    function FileBrowser__addDirSelect(dirs, files) {
+      info('FileBrowser__addDirSelect: dirs =', dirs)
+      info('FileBrowser__addDirSelect: files =', files)
 
       var nextNum = this.dirSelects.length
 
@@ -1273,7 +1273,7 @@
         var val = $(this).val()
         var i
 
-        info('VolumeBrowser: selectChanged: val = '+JSON.stringify(val))
+        info('FileBrowser: selectChanged: val = '+JSON.stringify(val))
 
         //if the captured number of DirSelects < the current number of DirSelects
         if (numDirSelects < self.dirSelects.length) {
@@ -1296,7 +1296,7 @@
           self.subdirs.push(val)
 
           function lookupSuccess(data) {
-            info('VolumeBrowser__addDirSelect: disSelectChanged: lookupSuccess; data = ', data)
+            info('FileBrowser__addDirSelect: disSelectChanged: lookupSuccess; data = ', data)
             self.addDirSelect(data.dirs, data.files)
           }
 
@@ -1324,11 +1324,11 @@
       } //end: dirSelectChanged()
       
       $( '#'+dirSelect.ids.select ).change( dirSelectChanged )
-    } //end: VolumeBrowser__addDirSelect()
+    } //end: FileBrowser__addDirSelect()
 
-  VolumeBrowser.prototype.fileSelected =
-    function VolumeBrowser__fileSelected(file) {
-      info('VolumeBrowser__fileSelected: fqfn:'
+  FileBrowser.prototype.fileSelected =
+    function FileBrowser__fileSelected(file) {
+      info('FileBrowser__fileSelected: fqfn:'
           + '"' + this.selectedVolume + '"/'
           + this.subdirs.join('/')
           + '/'
@@ -1348,7 +1348,7 @@
         self.videoApp.videoContents.addVideoContent(volume, subdirs, file)
       }
       this.addVideoContentButton.$dom.click( addVideoContent )
-    } //end: VolumeBrowser__fileSelected()
+    } //end: FileBrowser__fileSelected()
 
   function DirSelect(dirNum, dirs, files, volumeBrowser) {
     this.dirNum        = dirNum
