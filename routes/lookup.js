@@ -36,7 +36,7 @@ module.exports = function (req, res) {
   console.log("lookup: cfg = ", cfg)
 
   var top = req.query.top
-  var top_fqdn = cfg['video directories'][top].fqdn
+  var top_fqdn = cfg['video roots'][top].fqdn
   var subdirs = u.clone(req.query.subdirs) || []
   var exts = cfg['acceptable extensions']
   console.log("lookup: exts = %j", exts)
