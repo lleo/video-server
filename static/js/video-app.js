@@ -1239,7 +1239,7 @@
 
       $.ajax({ url  : 'lookup'
              , type : 'GET'
-             , data : { top     : val
+             , data : { root    : val
                       , subdirs : self.subdirs
                       }
              , success : lookupSuccess
@@ -1302,7 +1302,7 @@
 
           $.ajax({ url     : 'lookup'
                  , type    : 'GET'
-                 , data    : { top     : self.selectedVolume
+                 , data    : { root    : self.selectedVolume
                              , subdirs : self.subdirs
                              }
                  , success : lookupSuccess

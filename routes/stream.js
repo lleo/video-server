@@ -36,21 +36,21 @@ function streamVideo(req, res, next) {
   var app = res.app
 
   var p = decodeURI(req.path).split('/')
-  var volume = p[2]
+  var root = p[2]
   var subdirs = p.slice(3,p.length-1)
   var file = p[p.length-1]
-  console.log('stream: volume = %j', volume)
+  console.log('stream: root = %j', root)
   console.log('stream: subdirs = %j', subdirs)
   console.log('stream: file = %j', file)
 
-  //var volume = req.params[0]
+  //var root = req.params[0]
   //var subdirsStr = req.params[1]
   //subdirsStr = subdirsStr.slice(1)
   //var subdirs = subdirsStr == '' ? [] : subdirsStr.split('/')
   //var file = req.params[2]
   
   var app_cfg = app.get('app config by name')
-  var vid_fqdn = app_cfg['video roots'][volume].fqdn
+  var vid_fqdn = app_cfg['video roots'][root].fqdn
 
   var vid_path = [vid_fqdn]
   vid_path = vid_path.concat(subdirs)

@@ -35,13 +35,13 @@ module.exports = function (req, res) {
 
   console.log("lookup: cfg = ", cfg)
 
-  var top = req.query.top
-  var top_fqdn = cfg['video roots'][top].fqdn
+  var root = req.query.root
+  var root_fqdn = cfg['video roots'][root].fqdn
   var subdirs = u.clone(req.query.subdirs) || []
   var exts = cfg['acceptable extensions']
   console.log("lookup: exts = %j", exts)
 
-  var localSubdirs = [top_fqdn].concat(subdirs)
+  var localSubdirs = [root_fqdn].concat(subdirs)
 
   console.log("lookup: localSubdirs = %j", localSubdirs)
   console.log("lookup: subdirs = %j", subdirs)
@@ -77,7 +77,7 @@ module.exports = function (req, res) {
 
     files = filterFilesByExt(files, exts)
     
-    var json = { top     : top
+    var json = { root    : root
                , subdirs : subdirs
                , files   : files
                , dirs    : dirs
