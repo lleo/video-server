@@ -1172,7 +1172,7 @@
     /* volumeNames = [ name_1, name_2, ..., name_n]
      */
     this.videoApp = videoApp
-    this.ids = { div: 'volumeBrowserDiv'
+    this.ids = { div: 'volumeBrowser'
                , select: 'volumeBrowserSelect'
                , wrapDiv: 'volumeBrowserSelectWrapDiv'
                }

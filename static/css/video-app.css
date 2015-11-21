@@ -23,45 +23,53 @@ button.launchButton::before {
 }
 
 div#fileSelect {
-  display : inline-block;
+  display    : inline-block;
+  font-size  : 12pt;
+  width      : 100%;
+  overflow-x : scroll;
+}
+
+div#volumeBrowser {
+  display : flex;
 }
 
 div.volumeSelector {
   display   : flex;
-/*  float     : left; */
-  height    : 220px;
+/*  float     : left;*/
   overflow-x: scroll;
   overflow-y: auto;
 }
 
 div.wrapVolumeSelect {
-/*  float     : left; */
-  height    : 220px;
-  width     : 100px;
-  min-width : 100px;
+/*  float     : left;*/
+  font-size : inherit;
+  width     : 9em;
+  min-width : 9em;
   overflow-x: auto;
   overflow-y: auto;
 }
 
 select.volumeSelector {
-  min-width  : 100%;
-  min-height : 220px;
+  font-size  : inherit;
+  min-width  : 9em;
+  min-height : 16em;
 }
 
 div.fileSelector {
-/*  float     : left; */
-  width     : 180px;
-  min-width : 180px;
 }
 
 div.wrapSelect {
   overflow-x: auto;
   overflow-y: auto;
+  font-size : inherit;
+  width     : 18em;
+  height    : 16em;
 }
 
 select.fileSelector {
-  height    : 220px;
-  min-width : 180px;
+  font-size  : inherit;
+  min-height : 16em;
+  min-width  : 18em;
 }
 
 div#videoStuff {
@@ -98,9 +106,6 @@ div.videoContent {
 div.spinner {
   z-index  : 2147483647;
   position : absolute;
-/*  display  : inline-block; */
-  top      : 100px;
-  left     : 100px;
   color    : white;
 }
 
@@ -116,8 +121,6 @@ div.btn {
 div#videoControls {
   z-index  : 2147483647;
   position : absolute;
-  top      : 0px;
-  left     : 0px;
 }
 
 div#videoControls.disabled {
