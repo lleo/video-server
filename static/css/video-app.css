@@ -29,18 +29,19 @@ div#fileSelect {
   overflow-x : scroll;
 }
 
-div#volumeBrowser {
+div#fileBrowser {
   display : flex;
-}
-
-div.volumeSelector {
-  display   : flex;
 /*  float     : left;*/
   overflow-x: scroll;
   overflow-y: auto;
 }
 
-div.wrapVolumeSelect {
+/*
+div.rootSelector {
+}
+*/
+
+div#rootBrowserSelectWrapDiv {
 /*  float     : left;*/
   font-size : inherit;
   width     : 9em;
@@ -49,11 +50,22 @@ div.wrapVolumeSelect {
   overflow-y: auto;
 }
 
-select.volumeSelector {
+/*
+div.wrapRootSelect {
+
+}
+*/
+
+select#rootBrowserSelect {
   font-size  : inherit;
   min-width  : 9em;
   min-height : 16em;
 }
+
+/*
+select.rootSelector {
+}
+*/
 
 div.fileSelector {
 }
