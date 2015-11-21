@@ -78,9 +78,9 @@
 
     var videoContents = new VideoContents(this)
     var videoControls = new VideoControls(controls_cfg, this)
-    var volumeBrowser = new FileBrowser(cfg['video root names'], this)
+    var fileBrowser   = new FileBrowser(cfg['video root names'], this)
 
-    this.volumeBrowser = volumeBrowser
+    this.fileBrowser = fileBrowser
 
     /*
      * See comment below on *Multiple Videos*
@@ -89,7 +89,7 @@
 
     this.videoControls = videoControls
 
-    $('#fileSelect').append( volumeBrowser.$dom )
+    $('#fileSelect').append( fileBrowser.$dom )
 
     $('#videoStuff').append( videoContents.$dom )
     
@@ -1350,11 +1350,11 @@
       this.addVideoContentButton.$dom.click( addVideoContent )
     } //end: FileBrowser__fileSelected()
 
-  function DirSelect(dirNum, dirs, files, volumeBrowser) {
+  function DirSelect(dirNum, dirs, files, fileBrowser) {
     this.dirNum        = dirNum
     this.dirs          = dirs
     this.files         = files
-    this.volumeBrowser = volumeBrowser
+    this.fileBrowser   = fileBrowser
     this.nextDirSelect = undefined
 
     var size = dirs.length + files.length
