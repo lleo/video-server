@@ -29,8 +29,15 @@ console.log("HELLO app.js")
 // view engine setup
 app.set('views', path.join(__dirname, 'views'))
 app.set('view engine', 'jade')
+
+/* 
+ *  Set the Application Title
+ */
 app.set('title',"Sean Egan's Video File Server")
 
+/*
+ *  Read and Parse the Config File
+ */
 let cfgfn = './video-server.json'
   , orig_cfg_json_str   = fs.readFileSync(cfgfn, 'utf8')
   , orig_cfg
@@ -43,16 +50,26 @@ try {
   process.exit(1)
 }
 
+/*
+ *  Save the Original Config Data in the Application as 'app config orig'
+ */
 app.set('app config orig', orig_cfg)
 
+/*
+ *  Restructure the Config Data from a list into a Hash lookup by Root name
+ */
 var cfg = {}
-cfg['video directories'] = {}
+cfg['video roots'] = {}
 cfg.order = []
-for (let ent of orig_cfg['video directories']) {
-  cfg['video directories'][ent.name] = { fqdn: ent.fqdn }
+for (let ent of orig_cfg['video roots']) {
+  cfg['video roots'][ent.name] = { fqdn: ent.fqdn }
   cfg.order.push(ent.name)
 }
 cfg['acceptable extensions'] = u.clone(orig_cfg['acceptable extensions'])
+
+/*
+ *  Save By-Name Config Data in the Application as 'app config by name'
+ */
 app.set('app config by name', cfg)
 
 // uncomment after placing your favicon in /public
