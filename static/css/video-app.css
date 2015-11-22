@@ -94,6 +94,10 @@ div#videoContents {
 /*  width  : 100% */
 }
 
+div.videoContent {
+  background-color : rgba(0,0,0,0);
+}
+
 div.videoDisplay {
   width  : 100%;
   position : relative;
@@ -112,13 +116,14 @@ video.videoDisplay {
 div.videoContent {
   position : relative;
   width  : 100%;
-  background-color : black;
+  background-color : rgb(0,0,0,0);
 }
 
 div.spinner {
   z-index  : 2147483647;
   position : absolute;
   color    : white;
+  background-color : rgba(0,0,0,0);
 }
 
 div.btn {
