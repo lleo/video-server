@@ -386,7 +386,7 @@
 
       { // closure of these mouse event functions over these state variables
         var hideBothTimerId
-          , firstThrottleTimerExecuted = false
+          , firstThrottleTimerExecuted = true
           , overControls = false
 
         function onMouseMove() {
@@ -397,12 +397,14 @@
           //     then hide the controls & cursor
           var videoControls = self.videoApp.videoControls
 
-          // After a longish time after the last mouse movement event was fired,
-          // this code will fire causing the controls and cursor to hide.
+          // Given that every time 50ms after a 'mousemove' event we disable
+          // and then reenable this timer function for 2000ms,
+          // **this function only fires** when no 'mousemove' events has
+          // occured for over 2050ms.
           function hideBothTimerFn() {
-            // the variable overControls is a boolean that is set try by the 
-            // 'mouseenter' and 'false' by the 'mouseleave' events declared
-            // below this onMouseMoved() function declaration.
+            // NOTE: The variable overControls is a boolean that is set true
+            // by the 'mouseenter' and false by the 'mouseleave' events
+            // See the onMouse{Enter,Leave} functions declared below.
             if (!overControls && !videoControls.$dom.hasClass('hide'))
               videoControls.$dom.addClass('hide')
 
@@ -410,18 +412,23 @@
               self.$dom.addClass('nocursor')
 
             // reset the firstThrottleTimerExecuted & hideBothTimerId
-            firstThrottleTimerExecuted = false
+            firstThrottleTimerExecuted = true
             hideBothTimerId = undefined
           }
+
+          // This is the second part of the throttle algorithm.
+          // First, every time onMouseMove() fires we turn off watching for
+          //   'mousemove' events and set this timer fuction (see below).
+          // When this timer function fires we turn the watch for 'mousemove'
+          //   events back on. So for 50ms the 'mousemove' events were ignored.
           function throttleTimerFn() {
-            // turn 'mousemove' back on
             self.$dom.on('mousemove', onMouseMove)
 
-            // if the hideBothTimerId for the histBothTimerFn exists
-            // and this is NOT the first in a sequence of 'mousemove' events
-            if (hideBothTimerId || !firstThrottleTimerExecuted) {
+            // IF the the hideBothTimerFn has already been set
+            // OR this is the first in a sequence of 'mousemove' events
+            if (hideBothTimerId || firstThrottleTimerExecuted) {
               clearTimeout(hideBothTimerId)
-              firstThrottleTimerExecuted = true
+              firstThrottleTimerExecuted = false
               hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
             }
           }
@@ -443,6 +450,8 @@
           setTimeout(throttleTimerFn, 50)
         } //end: onMouseMove()
 
+        // This was a test to see if there was any jQuery or Browser trottleing
+        // of 'mousemove' events.
         //function onMouseMove(e) { //[test]
         //  info('onMouseMove: overControls = %o', overControls)
         //
@@ -461,17 +470,17 @@
         //
         //  // mouse moved -> show controls
         //  if ( self.videoApp.videoControls.$dom.hasClass('hide') ) {
-        //    info("onMouseMove: calling videoControls.$dom.removeClass('hide')")
+        //
         //    self.videoApp.videoControls.$dom.removeClass('hide')
         //  }
         //
         //  // mouse moved -> show cursor
         //  if ( self.$dom.hasClass('nocursor') ) {
-        //    info("onMouseMove: calling self.$dom.removeClass('nocursor')")
+        //
         //    self.$dom.removeClass('nocursor')
         //  }
         //
-        //  if (hideBothTimerId) clearTimeout(hideBothTimerId)
+        //  clearTimeout(hideBothTimerId)
         //  hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
         //} //end: onMouseMove() [test]
         this.$dom.on('mousemove', onMouseMove)
