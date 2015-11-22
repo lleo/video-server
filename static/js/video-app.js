@@ -5,17 +5,6 @@
 //This wrapper function is wholly unnecessary but whatever ...
 (function(window, document, undefined) {
 
-  function debug() {
-    var args
-    var videoApp = VIDEO_APP.videoApp
-    if (videoApp.debug) {
-      args = [].slice.apply(arguments)
-      lvl = args.shift()
-      if (lvl >= videoApp.debug)
-        console.log.apply(console, args)
-    }
-  }
-
   var LogLevels = ['info', 'warn', 'crit', 'none', 'error']
   {
     var info_lvl  = LogLevels.indexOf('info')
@@ -89,9 +78,9 @@
 
     this.videoControls = videoControls
 
-    $('#fileSelect').append( fileBrowser.$dom )
+    //$('#fileSelect').append( fileBrowser.$dom )
 
-    $('#videoStuff').append( videoContents.$dom )
+    //$('#videoStuff').append( videoContents.$dom )
     
     //    $('#videoStuff').append( videoControls.$dom )
 
@@ -1470,6 +1459,9 @@
       console.log('VIDEO_APP.init(cfg) CALLED cfg =', cfg)
 
       var videoApp = new VideoApp(cfg)
+
+      $('#fileSelect').append( videoApp.fileBrowser.$dom )
+      $('#videoStuff').append( videoApp.videoContents.$dom )
 
       VIDEO_APP.videoApp = videoApp
 
