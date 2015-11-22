@@ -33,6 +33,7 @@ function streamTest(req, res, next) {
 }
 
 function streamVideo(req, res, next) {
+  'use strict';
   var app = res.app
 
   var p = decodeURI(req.path).split('/')
@@ -43,22 +44,44 @@ function streamVideo(req, res, next) {
   console.log('stream: subdirs = %j', subdirs)
   console.log('stream: file = %j', file)
 
+  if (root === '..') {
+    console.error('stream: HACKING ATTEMPT root === ".."')
+    res.status(404).end('FUCK OFF')
+    return
+  }
+  
+  for (let dir of subdirs) {
+    if (dir === '..') {
+      console.error('stream: HACKING ATTEMPT subdirs contains ".."')
+      res.status(404).end('FUCK OFF')
+      return
+    }
+  }
+  
+  if (file === '..'){
+    console.error('stream: HACKING ATTEMPT file == ".."')
+    res.status(404).end('FUCK OFF')
+    return
+  }
+    
   //var root = req.params[0]
   //var subdirsStr = req.params[1]
   //subdirsStr = subdirsStr.slice(1)
   //var subdirs = subdirsStr == '' ? [] : subdirsStr.split('/')
   //var file = req.params[2]
+
+  subdirs.unshift('/')
+  var nmldir = path.resolve.apply(path, subdirs)
   
   var app_cfg = app.get('app config by name')
-  var vid_fqdn = app_cfg['video roots'][root].fqdn
+  var root_fqdn = app_cfg['video roots'][root].fqdn
 
-  var vid_path = [vid_fqdn]
-  vid_path = vid_path.concat(subdirs)
+  var vid_path = [root_fqdn, nmldir]
   vid_path.push(file)
   console.log('stream: vid_path = %j', vid_path)
 
 
-  var video_fqfn = path.resolve.apply(path, vid_path)
+  var video_fqfn = path.join.apply(path, vid_path)
   console.log("stream: video_fqfn=%s", video_fqfn)
 
   var ext = path.extname(video_fqfn).toLowerCase().replace(/^\./, '')
@@ -75,7 +98,7 @@ function streamVideo(req, res, next) {
   }
 
   console.log("stream: %s %s", req.method, req.url)
-  console.log(util.inspect(req.headers))
+  console.log("stream: headers =", util.inspect(req.headers))
 
   mimetype = ext2mimeType[ext]
   console.log("stream: !!! ext=%s; mimetype=%s;", ext, mimetype)

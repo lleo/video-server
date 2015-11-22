@@ -30,6 +30,8 @@ function filterFilesByExt(files, exts) {
 
 module.exports = function (req, res) {
   'use strict';
+
+  console.log('req.originalUrl = ', req.originalUrl)
   
   var cfg = req.app.get('app config by name')
 
@@ -41,12 +43,15 @@ module.exports = function (req, res) {
   var exts = cfg['acceptable extensions']
   console.log("lookup: exts = %j", exts)
 
-  var localSubdirs = [root_fqdn].concat(subdirs)
+  // Stop any hacking attempt to '..' below '/'
+  console.log('lookup: subdirs = %j', subdirs)
 
-  console.log("lookup: localSubdirs = %j", localSubdirs)
-  console.log("lookup: subdirs = %j", subdirs)
-  
-  var fqdn = path.join.apply(path, localSubdirs)
+  subdirs.unshift('/')
+  var nmldir = path.join.apply(path, subdirs)
+
+  console.log('lookup: nmldir = %s', nmldir)
+
+  var fqdn = path.join(root_fqdn, nmldir)
 
   console.log("lookup: fqdn = %j", fqdn)
   
