@@ -36,7 +36,7 @@ div#fileBrowser {
   overflow-y: auto;
 }
 
-/*
+/* FIXME: delete this
 div.rootSelector {
 }
 */
@@ -50,7 +50,7 @@ div#rootBrowserSelectWrapDiv {
   overflow-y: auto;
 }
 
-/*
+/* FIXME: delete this
 div.wrapRootSelect {
 
 }
@@ -96,6 +96,12 @@ div#videoContents {
 
 div.videoContent {
   background-color : rgba(0,0,0,0);
+}
+
+div.videoContent:focus {
+  outline-color : rgba(0,0,0,0);
+  outline-style : auto;
+  outline-width : auto;
 }
 
 div.videoDisplay {
