@@ -369,6 +369,7 @@
 
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.ids.div)
+                .attr('tabindex', 1)
                 .addClass('videoContent')
                 .addClass('nocursor')
                 .append( this.$video )
@@ -386,21 +387,116 @@
     
     this._setupVideoEvents()
     this._setupMouseEvents()
-    
+    this._setupKeyboardEvents()
+
     this._eventsSetup = true
   }
-  
+
+  VideoContent.prototype._setupKeyboardEvents =
+    function VideoContent___setupKeyboardEvents() {
+      var self = this
+
+      function onKeyPress(e) {
+        info('onKeyPress: called e =', e)
+        var videoControls = self.videoApp.videoControls
+        var videoContents = self.videoApp.videoContents
+
+        if ( videoContents.contents.length < 0 ) return
+
+        //From https://api.jquery.com/keypress/
+        // e.type 'keypress'
+        // e.timeStamp Date.now()
+        // e.keyCode number of char pressed
+        // e.key ?
+        // e.charCode number of char pressed
+        // e.char ?
+        // e.which number of char pressed
+        // e.ctrlKey
+        // e.shiftKey
+        // e.altKey
+        // e.metaKey
+        // e.cacelable
+        // e.target
+        // e.relatedTarge
+        // e.handleObj
+        // e.data undefined
+        // e.preventDefault()
+        // e.stopPropagation()
+        // e.stopImmediatePropagation()
+        //From: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
+        // e.originalEvent.target.id
+        // e.originalEvent.type  type of event 'keypress'?
+        // e.originalEvent.bubbles
+        // e.originalEvent.cancelable
+        // e.originalEvent.char the UniCode character of the key as a one element string
+        // e.originalEvent.charCode the UniCode number (depricated)
+        // e.originalEvent.repeat has the key been pressed long enough to be repeating
+        // e.originalEvent.ctrlKey  true if control key was press along with this key
+        // e.originalEvent.shiftKey ..ditto..
+        // e.originalEvent.altKey   ..ditto..
+        // e.originalEvent.metaKey  ..ditto..
+
+        var msg
+        var char = String.fromCharCode( e.charCode )
+
+        switch (char) {
+         case 'p':
+         case ' ':
+          info("onKeyPress: '%s' pressed; $play.click()", char)
+          videoControls.$play.click()
+          break;
+
+         case 's':
+          info("onKeyPress: 's' pressed; $skip.click()")
+          videoControls.$skip.click()
+          break;
+
+         case 'S':
+          info("onKeyPress: 'S' pressed; long skip")
+          videoContents.seek( videoControls.skipForwSecs * 3 )
+          break;
+
+         case 'b':
+          info("onKeyPress: 's' pressed; $back.click()")
+          videoControls.$back.click()
+          break;
+
+         case 'B':
+          info("onKeyPress: 'B' pressed; long back")
+          videoContents.seek( -(videoControls.skipBackSecs * 3) )
+          break;
+
+         case 'F':
+          info("onKeyPress: 'F' pressed; $fullscreen.click()")
+          videoControls.$fullscreen.click()
+          break;
+
+         default:
+          msg = "onKeyPress: Unknown KeyPress: "
+              + "e.char="+e.char+" "
+              + "e.charCode="+e.charCode+" "
+              + "char="+char
+          info(msg)
+          //alert(msg)
+        }
+      }
+
+      //this.$dom.on('keypress', onKeyPress)
+      $(document).on('keypress', onKeyPress)
+    }
+
   VideoContent.prototype._setupMouseEvents =
     function VideoContent___setupMouseEvents() {
       if (this._eventsSetup) return
-      
+
       var hideBothTimerId
         , firstThrottleTimerExecuted = true
         , overControls = false
 
       var self = this
-      
+
       function onMouseMove() {
+        info('onMouseMove: called')
         // The algorithm is as follows:
         // 0 - turn off the on 'mousemove' event handler
         //   - show controls & cursor & start throttling the 'mousemove' events
@@ -1257,15 +1353,17 @@
 
     this.$dom = $(document.createElement('div'))
                 .attr('id', this.ids.div)
-                //.addClass('rootSelector')
+                //.addClass('rootSelector') //FIXME: delete this
 
-    var $select = $(document.createElement('select'))
-                  .attr('id', this.ids.select)
-                  .attr('size', this.rootNames.length)
-                  //.addClass('rootSelector')
+    var $rootSelect = $(document.createElement('select'))
+                      .attr('id', this.ids.select)
+                      .attr('size', this.rootNames.length)
+
+
+    this.$rootSelect = $rootSelect
 
     for (var i=0; i<this.rootNames.length; i+=1) {
-      $select.append(
+      this.$rootSelect.append(
         $(document.createElement('option'))
         .attr('value', this.rootNames[i])
         .append(this.rootNames[i])
@@ -1274,8 +1372,8 @@
 
     this.$dom.append( $(document.createElement('div'))
                       .attr('id', this.ids.wrapDiv)
-                      //.addClass('wrapRootSelect')
-                      .append( $select )
+                      //.addClass('wrapRootSelect') //FIXME: delete this
+                      .append( this.$rootSelect )
                     )
 
     var self = this
@@ -1283,7 +1381,7 @@
       var val = $(this).val()
       var i
       var dirSelect
-      
+
       info('FileBrowser: selectChanged: val = '+JSON.stringify(val))
 
       self.selectedRoot = val
@@ -1317,8 +1415,8 @@
 
              })
     } //end: selectChanged()
-    
-    $select.change( selectChanged )
+
+    this.$rootSelect.change( selectChanged )
   } //end: FileBroswer()
 
   FileBrowser.prototype.addDirSelect =
@@ -1439,33 +1537,32 @@
                 .attr('id', this.ids.div)
                 .addClass('fileSelector')
 
-    var $select
     var i
     if ( size > 0) {
-      $select = $(document.createElement('select'))
-                .attr('id', this.ids.select)
-                .attr('size', size<2 ? 2 : size)
-                .addClass('fileSelector')
+      this.$select = $(document.createElement('select'))
+                     .attr('id', this.ids.select)
+                     .attr('size', size<2 ? 2 : size)
+                     .addClass('fileSelector')
 
       for (i=0; i<dirs.length; i+=1) {
-        $select.append( $(document.createElement('option'))
-                        .attr('value', dirs[i])
-                        .addClass('directory')
-                        .append( dirs[i]+'/' )
-                      )
+        this.$select.append( $(document.createElement('option'))
+                             .attr('value', dirs[i])
+                             .addClass('directory')
+                             .append( dirs[i]+'/' )
+                           )
       }
       for (i=0; i<files.length; i+=1) {
-        $select.append( $(document.createElement('option'))
-                        .attr('value', files[i])
-                        .addClass('file')
-                        .append( files[i] )
-                      )
+        this.$select.append( $(document.createElement('option'))
+                             .attr('value', files[i])
+                             .addClass('file')
+                             .append( files[i] )
+                           )
       }
 
       this.$dom.append( $(document.createElement('div'))
                         .attr('id', this.ids.wrapDiv)
                         .addClass('wrapSelect')
-                        .append($select)
+                        .append( this.$select )
                       )
     }
     else {
@@ -1500,6 +1597,8 @@
 
       $('#fileSelect').append( videoApp.fileBrowser.$dom )
       $('#videoStuff').append( videoApp.videoContents.$dom )
+
+      videoApp.fileBrowser.$rootSelect.focus()
 
       VIDEO_APP.videoApp = videoApp
 
