@@ -15,5 +15,7 @@
      "fqdn" : "/Volumed/Seagate/Videos"
    }
   ],
-  "acceptable extensions" : ["mp4","m4v", "webm"]
+  "acceptable extensions" : ["mp4","m4v", "webm"],
+  "skip forward seconds"  : 30,
+  "skip backward seconds" : 10
 }
