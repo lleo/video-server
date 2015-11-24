@@ -58,14 +58,25 @@ app.set('app config orig', orig_cfg)
 /*
  *  Restructure the Config Data from a list into a Hash lookup by Root name
  */
+function isInteger(n) { return u.isNumber(n) ? n%1==0 : false }
+
 var cfg = {}
+
 cfg['video roots'] = {}
 cfg.order = []
 for (let ent of orig_cfg['video roots']) {
   cfg['video roots'][ent.name] = { fqdn: ent.fqdn }
   cfg.order.push(ent.name)
 }
+
+//FIXME: should put in a check for well formed orig_cfg['acceptable extensions']
 cfg['acceptable extensions'] = u.clone(orig_cfg['acceptable extensions'])
+
+if ( isInteger(orig_cfg['skip forward seconds']) )
+  cfg['skip forward seconds']  = orig_cfg['skip forward seconds']
+
+if ( isInteger(orig_cfg['skip backward seconds']) )
+  cfg['skip backward seconds'] = orig_cfg['skip backward seconds']
 
 /*
  *  Save By-Name Config Data in the Application as 'app config by name'
