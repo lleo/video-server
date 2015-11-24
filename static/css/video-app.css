@@ -273,3 +273,15 @@ div#fullscreen {
 div#fullscreenSym {
 
 }
+
+div#mark {
+  padding-top    : 1px;
+  padding-right  : 4px;
+  padding-bottom : 0px;
+  padding-left   : 3px;
+}
+
+div#markSym {
+
+}
+
