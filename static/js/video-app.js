@@ -5,6 +5,7 @@
 //This wrapper function is wholly unnecessary but whatever ...
 (function(window, document, undefined) {
 
+  // OIY VEI MIR! This is such a lame logging system!
   var LogLevels = ['info', 'warn', 'crit', 'none', 'error']
   {
     var info_lvl  = LogLevels.indexOf('info')
@@ -14,6 +15,7 @@
     var _slice    = Array.prototype.slice
 
     function info() {
+      //if (!VIDEO_APP.videoApp) console.trace()
       var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
       if (info_lvl >= debug_lvl) {
         args = _slice.apply(arguments)
@@ -24,6 +26,7 @@
     }
 
     function warn() {
+      //if (!VIDEO_APP.videoApp) console.trace()
       var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
       if (warn_lvl >= debug_lvl) {
         args = _slice.apply(arguments)
@@ -34,6 +37,7 @@
     }
 
     function crit() {
+      //if (!VIDEO_APP.videoApp) console.trace()
       var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
       if (crit_lvl >= debug_lvl) {
         args = _slice.apply(arguments)
@@ -51,22 +55,20 @@
       console.error.apply(console, args)
     }
 
-  } //end: closure block
+  } //end: closure block over logging system
   
 
   
   function VideoApp(_cfg) {
     var cfg = _.cloneDeep(_cfg) || {}
-    var controls_cfg = cfg.controls || {}
 
     this.cfg = cfg
     this.debug = cfg.debug || 'info'
     this.debugLvl = LogLevels.indexOf(this.debug)
     console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
-    
 
-    var videoContents = new VideoContents(this)
-    var videoControls = new VideoControls(controls_cfg, this)
+    var videoContents = new VideoContents(cfg['load'], this)
+    var videoControls = new VideoControls(cfg['controls config'], this)
     var fileBrowser   = new FileBrowser(cfg['video root names'], this)
 
     this.fileBrowser = fileBrowser
@@ -77,12 +79,6 @@
     this.videoContents = videoContents
 
     this.videoControls = videoControls
-
-    //$('#fileSelect').append( fileBrowser.$dom )
-
-    //$('#videoStuff').append( videoContents.$dom )
-    
-    //    $('#videoStuff').append( videoControls.$dom )
 
   } //end: VideoApp()
 
@@ -106,8 +102,9 @@
     }
   }
 
-  function VideoContents(videoApp) {
+  function VideoContents(initialLoad, videoApp) {
     this.videoApp = videoApp
+    this.initialLoad = _.cloneDeep(initialLoad)
     this.contents = []
     this.id = 'videoContents'
     this.$dom = $( document.createElement('div') )
@@ -116,10 +113,24 @@
 
     this.contents = [] //array of VideoContent objects
     this._isFullscreen = false
+
+    // !!! HACK ALERT !!!
+    // setTimeout() thing works but I do not like it :(
+    // also see onLoadedData for how the time position is set.
+    if (this.initialLoad) {
+      var self = this
+      setTimeout(function() {
+        self.addVideoContent( self.initialLoad.root
+                            , self.initialLoad.subdirs
+                            , self.initialLoad.file
+                            , self.initialLoad.time )
+        self.contents[0].$dom.focus()
+      }, 0)
+    }
   }
 
   VideoContents.prototype.addVideoContent =
-    function VideoContents__addVideoContent(root, subdirs, file) {
+    function VideoContents__addVideoContent(root, subdirs, file, initTime) {
       'use strict';
 
       /* Remove any video content that exists
@@ -140,7 +151,7 @@
       var vidNum = this.contents.length
       
       var videoContent = new VideoContent(vidNum, root, subdirs, file,
-                                          this.videoApp)
+                                          initTime, this.videoApp)
 
       this.contents.push(videoContent)
 
@@ -291,13 +302,14 @@
     } //end: VideoContents__toggleFullscreen()
 
 
-  function VideoContent(vidNum, root, subdirs, file, videoApp) {
+  function VideoContent(vidNum, root, subdirs, file, initTime, videoApp) {
     info('VideoContent() constructor')
 
     this.vidNum   = vidNum
     this.root     = root
     this.subdirs  = subdirs
     this.file     = file
+    this.initTime = initTime
     this.videoApp = videoApp
     this.ids = { div     : 'videoConentDiv-'+vidNum
                , canvas  : 'videoCanvas-'+vidNum
@@ -312,6 +324,12 @@
     this.videoWidth  = undefined //set in onLoadedData
     this.videoHeight = undefined //set in onLoadedData
 
+    var self = this
+    this.state = { root    : this.root
+                 , subdirs : this.subdirs
+                 , file    : this.file
+                 , get time() { return  Math.floor(self.$video[0].currentTime) }
+                 }
     /*
      * Create the video DOM element. Start with the SourceElement first
      */
@@ -342,7 +360,8 @@
                  .append($source)
 
     this.$video = $video
-    
+
+    //FIXME: delete this
     //var $display = $( document.createElement('div') )
     //               .attr('id', this.ids.display)
     //               .addClass('videoDisplay')
@@ -403,46 +422,46 @@
 
         if ( videoContents.contents.length < 0 ) return
 
-        //From https://api.jquery.com/keypress/
-        // e.type 'keypress'
-        // e.timeStamp Date.now()
-        // e.keyCode number of char pressed
-        // e.key ?
-        // e.charCode number of char pressed
-        // e.char ?
-        // e.which number of char pressed
-        // e.ctrlKey
-        // e.shiftKey
-        // e.altKey
-        // e.metaKey
-        // e.cacelable
-        // e.target
-        // e.relatedTarge
-        // e.handleObj
-        // e.data undefined
-        // e.preventDefault()
-        // e.stopPropagation()
-        // e.stopImmediatePropagation()
-        //From: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
-        // e.originalEvent.target.id
-        // e.originalEvent.type  type of event 'keypress'?
-        // e.originalEvent.bubbles
-        // e.originalEvent.cancelable
-        // e.originalEvent.char the UniCode character of the key as a one element string
-        // e.originalEvent.charCode the UniCode number (depricated)
-        // e.originalEvent.repeat has the key been pressed long enough to be repeating
-        // e.originalEvent.ctrlKey  true if control key was press along with this key
-        // e.originalEvent.shiftKey ..ditto..
-        // e.originalEvent.altKey   ..ditto..
-        // e.originalEvent.metaKey  ..ditto..
-
+        /* From https://api.jquery.com/keypress/
+         *  e.type 'keypress'
+         *  e.timeStamp Date.now()
+         *  e.keyCode number of char pressed
+         *  e.key ?
+         *  e.charCode number of char pressed
+         *  e.char ?
+         *  e.which number of char pressed
+         *  e.ctrlKey
+         *  e.shiftKey
+         *  e.altKey
+         *  e.metaKey
+         *  e.cacelable
+         *  e.target
+         *  e.relatedTarge
+         *  e.handleObj
+         *  e.data undefined
+         *  e.preventDefault()
+         *  e.stopPropagation()
+         *  e.stopImmediatePropagation()
+         * From: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
+         *  e.originalEvent.target.id
+         *  e.originalEvent.type  type of event 'keypress'?
+         *  e.originalEvent.bubbles
+         *  e.originalEvent.cancelable
+         *  e.originalEvent.char the UniCode character of the key as a one element string
+         *  e.originalEvent.charCode the UniCode number (depricated)
+         *  e.originalEvent.repeat has the key been pressed long enough to be repeating
+         *  e.originalEvent.ctrlKey  true if control key was press along with this key
+         *  e.originalEvent.shiftKey ..ditto..
+         *  e.originalEvent.altKey   ..ditto..
+         *  e.originalEvent.metaKey  ..ditto..
+         */
         var msg
-        var char = String.fromCharCode( e.charCode )
+        var character = String.fromCharCode( e.charCode )
 
-        switch (char) {
+        switch (character) {
          case 'p':
          case ' ':
-          info("onKeyPress: '%s' pressed; $play.click()", char)
+          info("onKeyPress: '%s' pressed; $play.click()", character)
           videoControls.$play.click()
           break;
 
@@ -475,7 +494,8 @@
           msg = "onKeyPress: Unknown KeyPress: "
               + "e.char="+e.char+" "
               + "e.charCode="+e.charCode+" "
-              + "char="+char
+              + "e.keyCode="+e.keyCode+" "
+              + "char="+character
           info(msg)
           //alert(msg)
         }
@@ -496,7 +516,7 @@
       var self = this
 
       function onMouseMove() {
-        info('onMouseMove: called')
+        //info('onMouseMove: called')
         // The algorithm is as follows:
         // 0 - turn off the on 'mousemove' event handler
         //   - show controls & cursor & start throttling the 'mousemove' events
@@ -612,6 +632,27 @@
       
       var self = this
 
+      $(window).on('popstate', function onPopState(e) {
+        info('VideoContent: onPopState: e = %o', e)
+        var oldState = e.originalEvent.state
+        var curState = _.cloneDeep(self.state)
+        info('VideoContent: onPopState: oldState = %o', oldState)
+        info('VideoContent: onPopState: curState = %o', curState)
+        var otime = oldState.time
+        delete oldState.time
+        var ctime = curState.time
+        delete curState.time
+        if (_.isEqual(oldState, curState)) {
+          info('VideoContent: onPopState: oldState & curState (minus time) are the same')
+          self.setPosition(otime)
+        }
+        else {
+          self.videoApp.videoContents.addVideoContent( oldState.root
+                                                     , oldState.subdirs
+                                                     , oldState.file
+                                                     , otime )
+        }
+      })
 
       $video.on('loadeddata', function onLoadedData(e) {
         info("onLoadedData: e.target.id=%s", e.target.id)
@@ -633,11 +674,15 @@
 
         info('onLoadedData: self.$video[0].duration = %f', self.$video[0].duration)
         var videoControls = self.videoApp.videoControls
+        var videoContents = self.videoApp.videoContents
+
         videoControls.$positionRng[0].max = self.$video[0].duration
 
-        //console.log('onLoadedData: self.cfg.initTime = %f', self.cfg.initTime)
-        //videoControls.setPosition(self.cfg.initTime)
-        //videoContents.setPosition(self.cfg.initTime)
+        if (self.initTime) {
+          console.log('onLoadedData: self.initTime = %f', self.initTime)
+          if (0 == self.vidNum) videoControls.setPosition(self.initTime)
+          self.setPosition(self.initTime)
+        }
         
       })
 
@@ -943,6 +988,8 @@
                , positionRng   : 'positionRng'
                , fullscreenDiv : 'fullscreen'
                , fullscreenSym : 'fullscreenSym'
+               , markDiv       : 'mark'
+               , markSym       : 'markSym'
                }
 
     this.$playSym       = undefined
@@ -960,6 +1007,8 @@
     this.$positionRng   = undefined
     this.$fullscreen    = undefined
     this.$fullscreenSym = undefined
+    this.$mark          = undefined
+    this.$markSym       = undefined
 
     this.$flexWrapper = $( document.createElement('div') )
                         .attr('id', this.ids.flexWrapper)
@@ -1201,6 +1250,50 @@
 
     this.$flexWrapper.append( this.$fullscreen )
 
+    /********************************
+     * Mark Video & Position Button *
+     ********************************/
+    this.$markSym = $( document.createElement('i') )
+                    .attr('id', this.ids.markSym)
+                    .addClass('fa')
+                    .addClass('fa-bookmark')
+
+    this.$mark = $( document.createElement('div') )
+                 .attr('id', this.ids.markDiv)
+                 .addClass('control')
+                 .append( this.$markSym )
+
+    this.onMarkClickFn = function onMarkClick(e) {
+      info('onMarkClick: called')
+
+      var videoContent = self.videoApp.videoContents.contents[0]
+      var root    = videoContent.root
+      var subdirs = videoContent.subdirs
+      var file    = videoContent.file
+      var time    = Math.floor(videoContent.$video[0].currentTime)
+
+      var q = { "root"    : root
+              , "subdirs" : subdirs
+              , "file"    : file
+              , "time"    : time
+              }
+      var qstr = $.param( q )
+
+      var url = window.location.origin + window.location.pathname + "?" + qstr
+
+      info('onMarkClick: window.location.origin = %s', window.location.origin)
+      info('onMarkClick: window.location.pathname = %s', window.location.pathname)
+      info('onMarkClick: q = %o', q)
+      info('onMarkClick: qstr = %s', qstr)
+      info('onMarkClick: url = %s', url)
+
+      var state = _.cloneDeep(videoContent.state)
+      info('onMarkClick: state = %o', state)
+
+      history.pushState(state, null, url)
+    }
+
+    this.$flexWrapper.append( this.$mark )
     //this.enable()
   } //end: VideoControls()
 
@@ -1296,7 +1389,8 @@
       this.$volumeSymDiv.on('click', this.onVolumeSymClickFn)
       this.$volumeRng.on('input', this.onVolumeRngInputFn)
       this.$fullscreen.on('click', this.onFullscreenClickFn)
-      
+      this.$mark.on('click', this.onMarkClickFn)
+
       return this._enabled = true
     }
   }
@@ -1318,6 +1412,8 @@
       this.$back.off('click', this.onBackClickFn)
       this.$fullscreen.off('click', this.onFullscreenClickFn)
       this.$volumeSym.off('click', this.onVolumeSymClickFn)
+      this.$mark.off('click', this.onMarkClickFn)
+
       this._enabled = false
     }
   }
@@ -1350,6 +1446,7 @@
     this.dirSelects     = [] //should be dirSelects.length == subdirs.length + 1 
     this.addVideoContentButton = undefined
     this.btnNum         = 0
+    this._eventsSetup   = false
 
     this.$dom = $(document.createElement('div'))
                 .attr('id', this.ids.div)
@@ -1417,7 +1514,64 @@
     } //end: selectChanged()
 
     this.$rootSelect.change( selectChanged )
+
+    this._setupEvents()
   } //end: FileBroswer()
+
+  FileBrowser.prototype._setupEvents = function FileBrowser___setupEvents() {
+    if (this._eventsSetup) return
+
+    this._setupKeyboardEvents()
+
+    this._eventsSetup = true
+  }
+  
+  FileBrowser.prototype._setupKeyboardEvents =
+    function FileBrowser___setupKeyboardEvents() {
+      if (this._eventsSetup) return
+
+      // For an complete list of keyCode's see:
+      // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode
+
+      var self = this
+      function onKeyDown(e) {
+        info("FileBrowser: onKeyDown: called %o", e)
+        if (e.originalEvent.repeat) return
+
+        var left  = 37
+        // up    = 38
+        var right = 39
+        // down  = 40
+
+        // only concerned with left and right
+        switch (e.keyCode) {
+         case left:
+          info("fileBrowser.$rootSelect: onKeyDown: left goes no where.")
+          break;
+
+         case right:
+          info("fileBrowser.$rootSelect: onKeyDown: right should focus right")
+          e.stopImmediatePropagation()
+          self.focusNext()
+          break;
+
+         default:
+
+        }
+
+        //return false
+      } //end: onKeyDown()
+
+      this.$rootSelect.on('keydown', onKeyDown)
+    } //end: FileBrowser___setupKeyboardEvents()
+
+  FileBrowser.prototype.focusNext = function FileBroswer__focusNext() {
+    if (this.dirSelects.length < 1) {
+      info("FileBroswer__focusNext: this.dirSelects.length = %d", this.dirSelects.length)
+      return
+    }
+    this.dirSelects[0].$select.focus()
+  }
 
   FileBrowser.prototype.addDirSelect =
     function FileBrowser__addDirSelect(dirs, files) {
@@ -1512,11 +1666,12 @@
       this.$dom.after( this.addVideoContentButton.$dom )
 
       var self = this
-      function addVideoContent(e) {
+      function addVideoContentFn(e) {
         self.addVideoContentButton.$dom.remove()
+        // the last argument of addVideoContent initTime is left undefined
         self.videoApp.videoContents.addVideoContent(root, subdirs, file)
       }
-      this.addVideoContentButton.$dom.click( addVideoContent )
+      this.addVideoContentButton.$dom.click( addVideoContentFn )
     } //end: FileBrowser__fileSelected()
 
   function DirSelect(dirNum, dirs, files, fileBrowser) {
@@ -1525,6 +1680,7 @@
     this.files         = files
     this.fileBrowser   = fileBrowser
     this.nextDirSelect = undefined
+    this._eventsSetup  = false
 
     var size = dirs.length + files.length
     
@@ -1572,7 +1728,71 @@
                       )
     }
 
+    this._setupEvents()
   } //end: DirSelect()
+
+  DirSelect.prototype.focusNext = function DirSelect__focusNext() {
+    var lastIdx = this.fileBrowser.dirSelects.length - 1
+    if ( this.dirNum < lastIdx) {
+      this.fileBrowser.dirSelects[this.dirNum+1].$select.focus()
+    }
+    //else do nothing
+  }
+
+  DirSelect.prototype.focusPrev = function DirSelect__focusPrev() {
+    if (this.dirNum == 0) {
+      this.fileBrowser.$rootSelect.focus()
+    }
+    if (this.dirNum > 0) {
+      this.fileBrowser.dirSelects[this.dirNum-1].$select.focus()
+    }
+  }
+
+  DirSelect.prototype._setupEvents = function DirSelect___setupEvents() {
+    if (this._eventsSetup) return
+
+    this._setupKeyboardEvents()
+
+    this._eventsSetup = true
+  }
+
+  DirSelect.prototype._setupKeyboardEvents =
+    function DirSelect___setupKeyboardEvents() {
+      if (this._eventsSetup) return
+
+      var self = this
+      function onKeyDown(e) {
+        if (e.originalEvent.repeat) return
+
+        var left  = 37
+        // up    = 38
+        var right = 39
+        // down  = 40
+
+        // only concerned with left and right
+        switch (e.keyCode) {
+         case left:
+          info("dirSelect[%d].$select: onKeyDown: left should focus left", self.dirNum)
+          e.stopImmediatePropagation()
+          self.focusPrev()
+          break;
+
+         case right:
+          info("fileBrowser.$rootSelect: onKeyDown: right should focus right")
+          e.stopImmediatePropagation()
+          self.focusNext()
+          break;
+
+         default:
+          info("dirSelect[%d].$select: onKeyDown: unknown keyCode=%d"
+              , self.dirNum, e.keyCode)
+        }
+
+        //return false
+      } //end: onKeyDown()
+
+      this.$select.on('keydown', onKeyDown)
+    } //end: DirSelect___setupKeyboardEvents()
 
   function LaunchVideoContentButton(file) {
     this.file    = file
@@ -1590,22 +1810,21 @@
 
   var VIDEO_APP = {
     "init" : function VIDEO_APP_init(cfg) {
-      
+
       console.log('VIDEO_APP.init(cfg) CALLED cfg =', cfg)
 
-      var videoApp = new VideoApp(cfg)
+      var videoApp
+      VIDEO_APP.videoApp = videoApp = new VideoApp(cfg)
 
       $('#fileSelect').append( videoApp.fileBrowser.$dom )
       $('#videoStuff').append( videoApp.videoContents.$dom )
 
       videoApp.fileBrowser.$rootSelect.focus()
 
-      VIDEO_APP.videoApp = videoApp
-
       return
     }
   }
 
   window.VIDEO_APP = VIDEO_APP
-  
+
 })(window, window.document)
