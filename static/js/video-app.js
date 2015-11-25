@@ -6,66 +6,16 @@
 (function(window, document, undefined) {
 
   // OIY VEI MIR! This is such a lame logging system!
-  var LogLevels = ['info', 'warn', 'crit', 'none', 'error']
-  {
-    var info_lvl  = LogLevels.indexOf('info')
-    var warn_lvl  = LogLevels.indexOf('warn')
-    var crit_lvl  = LogLevels.indexOf('crit')
-    var error_lvl = LogLevels.indexOf('error')
-    var _slice    = Array.prototype.slice
-
-    function info() {
-      //if (!VIDEO_APP.videoApp) console.trace()
-      var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
-      if (info_lvl >= debug_lvl) {
-        args = _slice.apply(arguments)
-        if (args.length == 0) args.push('')
-        args[0] = '[INFO] '+args[0]
-        console.log.apply(console, args)
-      }
-    }
-
-    function warn() {
-      //if (!VIDEO_APP.videoApp) console.trace()
-      var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
-      if (warn_lvl >= debug_lvl) {
-        args = _slice.apply(arguments)
-        if (args.length == 0) args.push('')
-        args[0] = '[WARN] '+args[0]
-        console.log.apply(console, args)
-      }
-    }
-
-    function crit() {
-      //if (!VIDEO_APP.videoApp) console.trace()
-      var args, debug_lvl = VIDEO_APP.videoApp.debugLvl
-      if (crit_lvl >= debug_lvl) {
-        args = _slice.apply(arguments)
-        if (args.length == 0) args.push('')
-        args[0] = '[CRIT] '+args[0]
-        console.log.apply(console, args)
-      }
-    }
-
-    function error() {
-      var args = _slice.apply(arguments)
-        , debug_lvl = VIDEO_APP.videoApp.debugLvl
-      if (args.length == 0) args.push('')
-      args[0] = '[ERROR] '+args[0]
-      console.error.apply(console, args)
-    }
-
-  } //end: closure block over logging system
-  
 
   
   function VideoApp(_cfg) {
     var cfg = _.cloneDeep(_cfg) || {}
 
     this.cfg = cfg
+
     this.debug = cfg.debug || 'info'
-    this.debugLvl = LogLevels.indexOf(this.debug)
     console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
+    VideoApp.setLogLevel(this.debug)
 
     var videoContents = new VideoContents(cfg['load'], this)
     var videoControls = new VideoControls(cfg['controls config'], this)
@@ -82,6 +32,71 @@
 
   } //end: VideoApp()
 
+  VideoApp._logLevel = 0 //default setting
+  VideoApp._logLevels = ['info', 'warn', 'crit', 'none', 'error']
+  VideoApp.getLogLevel = function VideoApp_getLogLevel(level) {
+    if (typeof level != 'string') return VideoApp._logLevel
+
+    var lvl = VideoApp._logLevels.indexOf(level)
+
+    if (lvl < 0) return VideoApp._logLevel
+
+    return lvl
+  }
+  VideoApp.setLogLevel = function VideoApp_setLogLevel(level) {
+    return VideoApp._logLevel = VideoApp.getLogLevel(level)
+  }
+  VideoApp.info = info
+  VideoApp.warn = warn
+  VideoApp.crit = crit
+  VideoApp.error = error
+  
+  {
+    var info_lvl  = VideoApp.getLogLevel('info')
+    var warn_lvl  = VideoApp.getLogLevel('warn')
+    var crit_lvl  = VideoApp.getLogLevel('crit')
+    var error_lvl = VideoApp.getLogLevel('error')
+    var _slice    = Array.prototype.slice
+
+    function info() {
+      var args, debug_lvl = VideoApp.getLogLevel()
+      if (info_lvl >= debug_lvl) {
+        args = _slice.apply(arguments)
+        if (args.length == 0) args.push('')
+        args[0] = '[INFO] '+args[0]
+        console.log.apply(console, args)
+      }
+    }
+
+    function warn() {
+      var args, debug_lvl = VideoApp.getLogLevel()
+      if (warn_lvl >= debug_lvl) {
+        args = _slice.apply(arguments)
+        if (args.length == 0) args.push('')
+        args[0] = '[WARN] '+args[0]
+        console.log.apply(console, args)
+      }
+    }
+
+    function crit() {
+      var args, debug_lvl = VideoApp.getLogLevel()
+      if (crit_lvl >= debug_lvl) {
+        args = _slice.apply(arguments)
+        if (args.length == 0) args.push('')
+        args[0] = '[CRIT] '+args[0]
+        console.log.apply(console, args)
+      }
+    }
+
+    function error() {
+      var args = _slice.apply(arguments)
+      if (args.length == 0) args.push('')
+      args[0] = '[ERROR] '+args[0]
+      console.error.apply(console, args)
+    }
+
+  } //end: closure block over logging system
+  
   {
     var ext2mimetype = { 'webm': 'video/webm'
                        , 'mp4' : 'video/mp4'

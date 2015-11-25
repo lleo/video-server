@@ -165,20 +165,24 @@ div#videoControls.disabled div div i {
   opacity: 0.7;  
 }
 
+div#videoControls.hide {
+  display : none;
+}
+
+div.spinner.hide {
+  display : none;
+}
+
+.nocursor {
+  cursor : none;
+}
+
 div#videoControls.enabled {
 
 }
 
 div#flexWrapper {
   display  : flex;
-}
-
-.hide {
-  display : none;
-}
-
-.nocursor {
-  cursor : none;
 }
 
 div.control {
@@ -276,6 +280,7 @@ div#fullscreenSym {
 }
 
 div#mark {
+  margin-left    : 1em;
   padding-top    : 1px;
   padding-right  : 4px;
   padding-bottom : 0px;
