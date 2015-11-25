@@ -1813,23 +1813,6 @@
 
   } //end: LaunchVideoConentButton()
 
-  var VIDEO_APP = {
-    "init" : function VIDEO_APP_init(cfg) {
-
-      console.log('VIDEO_APP.init(cfg) CALLED cfg =', cfg)
-
-      var videoApp
-      VIDEO_APP.videoApp = videoApp = new VideoApp(cfg)
-
-      $('#fileSelect').append( videoApp.fileBrowser.$dom )
-      $('#videoStuff').append( videoApp.videoContents.$dom )
-
-      videoApp.fileBrowser.$rootSelect.focus()
-
-      return
-    }
-  }
-
-  window.VIDEO_APP = VIDEO_APP
+  window.VideoApp = VideoApp
 
 })(window, window.document)
