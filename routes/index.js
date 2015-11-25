@@ -46,40 +46,38 @@ module.exports = function(req, res){
 
   console.log('index: req.query = %j', req.query)
 
-  (function checkQuery() {
+
+  ;(function checkQuery() {
     var load = {}
     var root, subdirs, file, time
     var rootNames = cfg['video root names']
+    console.log('checkQuery: req.query == trueish')
+    console.log('checkQuery: ', util.inspect(req.query, {depth:null,colors:true}))
+    root = req.query.root
+    if (!root) return
+    if ( !rootNames.some(function(e){ return e == root }) ) return
 
-    if (req.query) {
-      root = req.query.root
-      if (!root) return
-      if ( !rootNames.some(function(e){ return e == root }) ) return
+    load.root = root
+    subdirs = req.query.subdirs
+    if (!subdirs) return
+    if (!u.isArray(subdirs)) return
+    if ( !subdirs.every(function(e,i){ return u.isString(e) }) ) return
+    load.subdirs = req.query.subdirs
 
-      load.root = root
+    file = req.query.file
+    if (!file) return
+    if (!u.isString(file)) return
+    load.file = file
 
-      subdirs = req.query.subdirs
-      if (!req.query.subdirs) return
-      if (!u.isArray(req.query.subdirs)) return
-      if (!req.subdirs.every(function(e){ return u.isString(e) })) return
+    time = req.query.time
+    if (u.isString(time)) time = parseInt(time, 10)
 
-      load.subdirs = req.query.subdirs
-
-      file = req.query.file
-      if (!file) return
-      if (!u.isString(file)) return
-
-      load.file = file
-
-      time = req.query.time
-      
-      if (!u.isUndefined(time)) {
-        if (isInteger(time)) load.time = time
-        else return
-      }
- 
-      cfg.load = load
+    if (!u.isUndefined(time) && !u.isNull(time)) {
+      if (isInteger(time)) load.time = time
+      else return
     }
+
+    cfg.load = load
   })()
 
   /* FROM the node.js REPL on v5.1.0
@@ -126,20 +124,26 @@ module.exports = function(req, res){
   //   1 - '/..[not followed by any char but /]'
   //   2 - '[beginning]..[not followed by any char but /]'
   //   3 - '[beginning]..[end]'
-  var rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
-  for (let subdir of cfg.load.subirs) {
-    if (subdir.match(rx)) {
+  var rx
+  if (cfg.load) {
+    console.log('index: cfg.load = %s', util.inspect(cfg.load, {depth:null,colors:true}))
+    rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
+    for (let subdir of cfg.load.subdirs) {
+      console.log('subdir = %j', subdir)
+      if (subdir.match(rx)) {
+        console.log('index: %j.match(%s)', subdir, rx.toString())
+        res.status(404).end('FUCK OFF')
+        return
+      }
+    }
+    console.log('index: subdirs passed')
+    if (cfg.load.file.match(rx)) {
       console.log('index: HACKING ATTEMPTY subdir contained ..')
       res.status(404).end('FUCK OFF')
       return
     }
+    console.log('index: file passed')
   }
-  if (cfg.load.file.match(rx)) {
-    console.log('index: HACKING ATTEMPTY subdir contained ..')
-    res.status(404).end('FUCK OFF')
-    return
-  }
-
   
   console.log("index: cfg = %j", { cfg: cfg })
   
