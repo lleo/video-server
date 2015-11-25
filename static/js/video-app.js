@@ -118,6 +118,7 @@
 
     this.contents = [] //array of VideoContent objects
     this._isFullscreen = false
+    this._eventsSetup = false
 
     // !!! HACK ALERT !!!
     // setTimeout() thing works but I do not like it :(
@@ -132,6 +133,8 @@
         self.contents[0].$dom.focus()
       }, 0)
     }
+
+    this._setupEvents()
   }
 
   VideoContents.prototype.addVideoContent =
@@ -161,6 +164,108 @@
       this.contents.push(videoContent)
 
       this.$dom.append(videoContent.$dom)
+    }
+
+  VideoContents.prototype._setupEvents =
+    function VideoContents___setupEvents() {
+      if (this._eventsSetup) return
+      this._setupKeyboardEvents()
+      this._eventsSetup = true
+    }
+
+  VideoContents.prototype._setupKeyboardEvents =
+    function VideoContents___setupKeyboardEvents() {
+      if (this._eventsSetup) return
+      var self = this
+
+      function onKeyPress(e) {
+        info('onKeyPress: called e =', e)
+        var videoControls = self.videoApp.videoControls
+        var videoContents = self.videoApp.videoContents
+
+        if ( videoContents.contents.length < 0 ) return
+
+        /* From https://api.jquery.com/keypress/
+         *  e.type 'keypress'
+         *  e.timeStamp Date.now()
+         *  e.keyCode number of char pressed
+         *  e.key ?
+         *  e.charCode number of char pressed
+         *  e.char ?
+         *  e.which number of char pressed
+         *  e.ctrlKey
+         *  e.shiftKey
+         *  e.altKey
+         *  e.metaKey
+         *  e.cacelable
+         *  e.target
+         *  e.relatedTarge
+         *  e.handleObj
+         *  e.data undefined
+         *  e.preventDefault()
+         *  e.stopPropagation()
+         *  e.stopImmediatePropagation()
+         * From: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
+         *  e.originalEvent.target.id
+         *  e.originalEvent.type  type of event 'keypress'?
+         *  e.originalEvent.bubbles
+         *  e.originalEvent.cancelable
+         *  e.originalEvent.char the UniCode character of the key as a one element string
+         *  e.originalEvent.charCode the UniCode number (depricated)
+         *  e.originalEvent.repeat has the key been pressed long enough to be repeating
+         *  e.originalEvent.ctrlKey  true if control key was press along with this key
+         *  e.originalEvent.shiftKey ..ditto..
+         *  e.originalEvent.altKey   ..ditto..
+         *  e.originalEvent.metaKey  ..ditto..
+         */
+        var msg
+        var character = String.fromCharCode( e.charCode )
+
+        switch (character) {
+         case 'p':
+         case ' ':
+          info("onKeyPress: '%s' pressed; $play.click()", character)
+          videoControls.$play.click()
+          break;
+
+         case 's':
+          info("onKeyPress: 's' pressed; $skip.click()")
+          videoControls.$skip.click()
+          break;
+
+         case 'S':
+          info("onKeyPress: 'S' pressed; long skip")
+          videoContents.seek( videoControls.skipForwSecs * 3 )
+          break;
+
+         case 'b':
+          info("onKeyPress: 's' pressed; $back.click()")
+          videoControls.$back.click()
+          break;
+
+         case 'B':
+          info("onKeyPress: 'B' pressed; long back")
+          videoContents.seek( -(videoControls.skipBackSecs * 3) )
+          break;
+
+         case 'F':
+          info("onKeyPress: 'F' pressed; $fullscreen.click()")
+          videoControls.$fullscreen.click()
+          break;
+
+         default:
+          msg = "onKeyPress: Unknown KeyPress: "
+              + "e.char="+e.char+" "
+              + "e.charCode="+e.charCode+" "
+              + "e.keyCode="+e.keyCode+" "
+              + "char="+character
+          info(msg)
+          //alert(msg)
+        }
+      }
+
+      //this.$dom.on('keypress', onKeyPress)
+      $(document).on('keypress', onKeyPress)
     }
 
   VideoContents.prototype.startBusy = function VideoContents__startBusy() {
@@ -411,104 +516,104 @@
     
     this._setupVideoEvents()
     this._setupMouseEvents()
-    this._setupKeyboardEvents()
+    //this._setupKeyboardEvents()
 
     this._eventsSetup = true
   }
 
-  VideoContent.prototype._setupKeyboardEvents =
-    function VideoContent___setupKeyboardEvents() {
-      var self = this
-
-      function onKeyPress(e) {
-        info('onKeyPress: called e =', e)
-        var videoControls = self.videoApp.videoControls
-        var videoContents = self.videoApp.videoContents
-
-        if ( videoContents.contents.length < 0 ) return
-
-        /* From https://api.jquery.com/keypress/
-         *  e.type 'keypress'
-         *  e.timeStamp Date.now()
-         *  e.keyCode number of char pressed
-         *  e.key ?
-         *  e.charCode number of char pressed
-         *  e.char ?
-         *  e.which number of char pressed
-         *  e.ctrlKey
-         *  e.shiftKey
-         *  e.altKey
-         *  e.metaKey
-         *  e.cacelable
-         *  e.target
-         *  e.relatedTarge
-         *  e.handleObj
-         *  e.data undefined
-         *  e.preventDefault()
-         *  e.stopPropagation()
-         *  e.stopImmediatePropagation()
-         * From: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
-         *  e.originalEvent.target.id
-         *  e.originalEvent.type  type of event 'keypress'?
-         *  e.originalEvent.bubbles
-         *  e.originalEvent.cancelable
-         *  e.originalEvent.char the UniCode character of the key as a one element string
-         *  e.originalEvent.charCode the UniCode number (depricated)
-         *  e.originalEvent.repeat has the key been pressed long enough to be repeating
-         *  e.originalEvent.ctrlKey  true if control key was press along with this key
-         *  e.originalEvent.shiftKey ..ditto..
-         *  e.originalEvent.altKey   ..ditto..
-         *  e.originalEvent.metaKey  ..ditto..
-         */
-        var msg
-        var character = String.fromCharCode( e.charCode )
-
-        switch (character) {
-         case 'p':
-         case ' ':
-          info("onKeyPress: '%s' pressed; $play.click()", character)
-          videoControls.$play.click()
-          break;
-
-         case 's':
-          info("onKeyPress: 's' pressed; $skip.click()")
-          videoControls.$skip.click()
-          break;
-
-         case 'S':
-          info("onKeyPress: 'S' pressed; long skip")
-          videoContents.seek( videoControls.skipForwSecs * 3 )
-          break;
-
-         case 'b':
-          info("onKeyPress: 's' pressed; $back.click()")
-          videoControls.$back.click()
-          break;
-
-         case 'B':
-          info("onKeyPress: 'B' pressed; long back")
-          videoContents.seek( -(videoControls.skipBackSecs * 3) )
-          break;
-
-         case 'F':
-          info("onKeyPress: 'F' pressed; $fullscreen.click()")
-          videoControls.$fullscreen.click()
-          break;
-
-         default:
-          msg = "onKeyPress: Unknown KeyPress: "
-              + "e.char="+e.char+" "
-              + "e.charCode="+e.charCode+" "
-              + "e.keyCode="+e.keyCode+" "
-              + "char="+character
-          info(msg)
-          //alert(msg)
-        }
-      }
-
-      //this.$dom.on('keypress', onKeyPress)
-      $(document).on('keypress', onKeyPress)
-    }
+  //VideoContent.prototype._setupKeyboardEvents =
+  //  function VideoContent___setupKeyboardEvents() {
+  //    var self = this
+  //
+  //    function onKeyPress(e) {
+  //      info('onKeyPress: called e =', e)
+  //      var videoControls = self.videoApp.videoControls
+  //      var videoContents = self.videoApp.videoContents
+  //
+  //      if ( videoContents.contents.length < 0 ) return
+  //
+  //      /* From https://api.jquery.com/keypress/
+  //       *  e.type 'keypress'
+  //       *  e.timeStamp Date.now()
+  //       *  e.keyCode number of char pressed
+  //       *  e.key ?
+  //       *  e.charCode number of char pressed
+  //       *  e.char ?
+  //       *  e.which number of char pressed
+  //       *  e.ctrlKey
+  //       *  e.shiftKey
+  //       *  e.altKey
+  //       *  e.metaKey
+  //       *  e.cacelable
+  //       *  e.target
+  //       *  e.relatedTarge
+  //       *  e.handleObj
+  //       *  e.data undefined
+  //       *  e.preventDefault()
+  //       *  e.stopPropagation()
+  //       *  e.stopImmediatePropagation()
+  //       * From: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
+  //       *  e.originalEvent.target.id
+  //       *  e.originalEvent.type  type of event 'keypress'?
+  //       *  e.originalEvent.bubbles
+  //       *  e.originalEvent.cancelable
+  //       *  e.originalEvent.char the UniCode character of the key as a one element string
+  //       *  e.originalEvent.charCode the UniCode number (depricated)
+  //       *  e.originalEvent.repeat has the key been pressed long enough to be repeating
+  //       *  e.originalEvent.ctrlKey  true if control key was press along with this key
+  //       *  e.originalEvent.shiftKey ..ditto..
+  //       *  e.originalEvent.altKey   ..ditto..
+  //       *  e.originalEvent.metaKey  ..ditto..
+  //       */
+  //      var msg
+  //      var character = String.fromCharCode( e.charCode )
+  //
+  //      switch (character) {
+  //       case 'p':
+  //       case ' ':
+  //        info("onKeyPress: '%s' pressed; $play.click()", character)
+  //        videoControls.$play.click()
+  //        break;
+  //
+  //       case 's':
+  //        info("onKeyPress: 's' pressed; $skip.click()")
+  //        videoControls.$skip.click()
+  //        break;
+  //
+  //       case 'S':
+  //        info("onKeyPress: 'S' pressed; long skip")
+  //        videoContents.seek( videoControls.skipForwSecs * 3 )
+  //        break;
+  //
+  //       case 'b':
+  //        info("onKeyPress: 's' pressed; $back.click()")
+  //        videoControls.$back.click()
+  //        break;
+  //
+  //       case 'B':
+  //        info("onKeyPress: 'B' pressed; long back")
+  //        videoContents.seek( -(videoControls.skipBackSecs * 3) )
+  //        break;
+  //
+  //       case 'F':
+  //        info("onKeyPress: 'F' pressed; $fullscreen.click()")
+  //        videoControls.$fullscreen.click()
+  //        break;
+  //
+  //       default:
+  //        msg = "onKeyPress: Unknown KeyPress: "
+  //            + "e.char="+e.char+" "
+  //            + "e.charCode="+e.charCode+" "
+  //            + "e.keyCode="+e.keyCode+" "
+  //            + "char="+character
+  //        info(msg)
+  //        //alert(msg)
+  //      }
+  //    }
+  //
+  //    //this.$dom.on('keypress', onKeyPress)
+  //    $(document).on('keypress', onKeyPress)
+  //  }
 
   VideoContent.prototype._setupMouseEvents =
     function VideoContent___setupMouseEvents() {
@@ -637,6 +742,14 @@
       
       var self = this
 
+      function stateEqualExceptTime(o, n) {
+        if ( _.isEqual(o.root, n.root) &&
+             _.isEqual(o.subdirs, n.subdirs) &&
+             _.isEqual(o.file, n.file)          ) {
+          return true
+        }
+        return false
+      }
       $(window).on('popstate', function onPopState(e) {
         info('VideoContent: onPopState: e = %o', e)
         var oldState = e.originalEvent.state
@@ -644,10 +757,13 @@
         info('VideoContent: onPopState: oldState = %o', oldState)
         info('VideoContent: onPopState: curState = %o', curState)
         var otime = oldState.time
-        delete oldState.time
+        if (typeof otime == 'string') {
+          info('VideoContent: onPopState: otime is a string %o', otime)
+          otime = parseFloat(otime)
+          info('VideoContent: onPopState: otime = %f', otime)
+        }
         var ctime = curState.time
-        delete curState.time
-        if (_.isEqual(oldState, curState)) {
+        if ( stateEqualExceptTime(oldState, curState)) {
           info('VideoContent: onPopState: oldState & curState (minus time) are the same')
           self.setPosition(otime)
         }
