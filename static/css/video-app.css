@@ -24,7 +24,7 @@ button.launchButton::before {
 
 div#fileSelect {
   display    : inline-block;
-  font-size  : 12pt;
+  font-size  : 8pt;
   width      : 100%;
   overflow-x : scroll;
 }
@@ -144,6 +144,7 @@ div.btn {
 div#videoControls {
   z-index  : 2147483647;
   position : absolute;
+  font-size: 12pt;
 }
 
 div#videoControls.disabled {
