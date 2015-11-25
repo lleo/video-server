@@ -46,56 +46,46 @@
   VideoApp.setLogLevel = function VideoApp_setLogLevel(level) {
     return VideoApp._logLevel = VideoApp.getLogLevel(level)
   }
-  VideoApp.info = info
-  VideoApp.warn = warn
-  VideoApp.crit = crit
-  VideoApp.error = error
-  
-  {
-    var info_lvl  = VideoApp.getLogLevel('info')
-    var warn_lvl  = VideoApp.getLogLevel('warn')
-    var crit_lvl  = VideoApp.getLogLevel('crit')
-    var error_lvl = VideoApp.getLogLevel('error')
-    var _slice    = Array.prototype.slice
-
-    function info() {
-      var args, debug_lvl = VideoApp.getLogLevel()
-      if (info_lvl >= debug_lvl) {
-        args = _slice.apply(arguments)
-        if (args.length == 0) args.push('')
-        args[0] = '[INFO] '+args[0]
-        console.log.apply(console, args)
-      }
-    }
-
-    function warn() {
-      var args, debug_lvl = VideoApp.getLogLevel()
-      if (warn_lvl >= debug_lvl) {
-        args = _slice.apply(arguments)
-        if (args.length == 0) args.push('')
-        args[0] = '[WARN] '+args[0]
-        console.log.apply(console, args)
-      }
-    }
-
-    function crit() {
-      var args, debug_lvl = VideoApp.getLogLevel()
-      if (crit_lvl >= debug_lvl) {
-        args = _slice.apply(arguments)
-        if (args.length == 0) args.push('')
-        args[0] = '[CRIT] '+args[0]
-        console.log.apply(console, args)
-      }
-    }
-
-    function error() {
-      var args = _slice.apply(arguments)
+  var _slice    = Array.prototype.slice
+  var info = VideoApp.info = function info() {
+    var args
+      , info_lvl = VideoApp.getLogLevel('info')
+      , debug_lvl = VideoApp.getLogLevel()
+    if (info_lvl >= debug_lvl) {
+      args = _slice.apply(arguments)
       if (args.length == 0) args.push('')
-      args[0] = '[ERROR] '+args[0]
-      console.error.apply(console, args)
+      args[0] = '[INFO] '+args[0]
+      console.log.apply(console, args)
     }
-
-  } //end: closure block over logging system
+  }
+  var warn = VideoApp.warn = function warn() {
+    var args
+      , warn_lvl = VideoApp.getLogLevel('warn')
+      , debug_lvl = VideoApp.getLogLevel()
+    if (warn_lvl >= debug_lvl) {
+      args = _slice.apply(arguments)
+      if (args.length == 0) args.push('')
+      args[0] = '[WARN] '+args[0]
+      console.log.apply(console, args)
+    }
+  }
+  var crit = VideoApp.crit = function crit() {
+    var args
+      , crit_lvl = VideoApp.getLogLevel('crit')
+      , debug_lvl = VideoApp.getLogLevel()
+    if (crit_lvl >= debug_lvl) {
+      args = _slice.apply(arguments)
+      if (args.length == 0) args.push('')
+      args[0] = '[CRIT] '+args[0]
+      console.log.apply(console, args)
+    }
+  }
+  var error = VideoApp.error = function error() {
+    var args = _slice.apply(arguments)
+    if (args.length == 0) args.push('')
+    args[0] = '[ERROR] '+args[0]
+    console.error.apply(console, args)
+  }
   
   {
     var ext2mimetype = { 'webm': 'video/webm'
