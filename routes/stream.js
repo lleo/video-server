@@ -49,7 +49,7 @@ function streamVideo(req, res, next) {
     res.status(404).end('FUCK OFF')
     return
   }
-  
+
   for (let dir of subdirs) {
     if (dir === '..') {
       console.error('stream: HACKING ATTEMPT subdirs contains ".."')
@@ -57,13 +57,13 @@ function streamVideo(req, res, next) {
       return
     }
   }
-  
+
   if (file === '..'){
     console.error('stream: HACKING ATTEMPT file == ".."')
     res.status(404).end('FUCK OFF')
     return
   }
-    
+
   //var root = req.params[0]
   //var subdirsStr = req.params[1]
   //subdirsStr = subdirsStr.slice(1)
@@ -72,14 +72,13 @@ function streamVideo(req, res, next) {
 
   subdirs.unshift('/')
   var nmldir = path.resolve.apply(path, subdirs)
-  
+
   var app_cfg = app.get('app config by name')
   var root_fqdn = app_cfg['video roots'][root].fqdn
 
   var vid_path = [root_fqdn, nmldir]
   vid_path.push(file)
   console.log('stream: vid_path = %j', vid_path)
-
 
   var video_fqfn = path.join.apply(path, vid_path)
   console.log("stream: video_fqfn=%s", video_fqfn)
@@ -114,7 +113,13 @@ function streamVideo(req, res, next) {
 
     console.log('stream: RANGE: ' + start + ' - ' + end + ' = ' + chunksize)
 
-    var file_rstream = fs.createReadStream(video_fqfn, {start: start, end: end})
+    var file_rstream
+    try {
+      file_rstream = fs.createReadStream(video_fqfn, {start: start, end: end})
+    } catch (x) {
+      console.error('stream: Caught Exception; x = %j', x)
+      return
+    }
 
     res.status(206)
     res.set({ 'Content-Range' : 'bytes ' + start + '-' + end + '/' + total
@@ -136,6 +141,14 @@ function streamVideo(req, res, next) {
     res.set({'Content-Length': total
             , 'Content-Type': mimetype
             })
-    fs.createReadStream(video_fqfn).pipe(res)
+
+    var file_stream
+    try {
+      file_stream = fs.createReadStream(video_fqfn)
+    } catch (x) {
+      console.error('stream: Caught Exception x = %j', x)
+      return
+    }
+    file_stream.pipe(res)
   }
 }
