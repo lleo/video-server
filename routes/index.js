@@ -7,13 +7,12 @@
 var util = require('util')
 var u = require('lodash')
 
-function isInteger(n) {
-  if (!u.isNumber(n)) return false
-  if (0 !== n%1) return false
-  return true
+function isNonEmptyString(e) {
+  if (u.isString(e) && e.length) return true
+  return false
 }
 
-module.exports = function(req, res){
+module.exports = function(req, res, next){
   'use strict';
   var app_cfg = req.app.get('app config by name')
 
@@ -54,27 +53,33 @@ module.exports = function(req, res){
     console.log('checkQuery: req.query == trueish')
     console.log('checkQuery: ', util.inspect(req.query, {depth:null,colors:true}))
     root = req.query.root
-    if (!root) return
-    if ( !rootNames.some(function(e){ return e == root }) ) return
-
+    if (!root) { next(); return }
+    if ( !rootNames.some(function(e){ return e == root }) ) { next(); return }
     load.root = root
+
     subdirs = req.query.subdirs
-    if (!subdirs) return
-    if (!u.isArray(subdirs)) return
-    if ( !subdirs.every(function(e,i){ return u.isString(e) }) ) return
+    if (!subdirs) { next(); return }
+    if (!u.isArray(subdirs)) { next(); return }
+    if ( !subdirs.every(isNonEmptyString) ) { next(); return }
     load.subdirs = req.query.subdirs
 
     file = req.query.file
-    if (!file) return
-    if (!u.isString(file)) return
+    if (!file) { next(); return }
+    if (!isNonEmptyString(file)) { next(); return }
     load.file = file
 
     time = req.query.time
-    if (u.isString(time)) time = parseInt(time, 10)
+    // we test each false possable except time=0
+    if (isNonEmptyString(time) || u.isNumber(time)) {
+      if (u.isString(time)) time = parseInt(time, 10)
 
-    if (!u.isUndefined(time) && !u.isNull(time)) {
-      if (isInteger(time)) load.time = time
-      else return
+      if (!isNaN(time)) {
+        if (Number.isInteger(time))
+          load.time = time
+        else {
+          load.time = Math.floor(time)
+        }
+      }
     }
 
     cfg.load = load
