@@ -44,22 +44,28 @@ function streamVideo(req, res, next) {
   console.log('stream: subdirs = %j', subdirs)
   console.log('stream: file = %j', file)
 
-  if (root === '..') {
-    console.error('stream: HACKING ATTEMPT root === ".."')
+  // See routes/index.js for how I came up with this rx
+  var rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
+
+  if (root.match(rx)) {
+    console.error('stream: HACKING ATTEMPT root=%j matched %s'
+                 , root, rx.toString())
     res.status(404).end('FUCK OFF')
     return
   }
 
-  for (let dir of subdirs) {
-    if (dir === '..') {
-      console.error('stream: HACKING ATTEMPT subdirs contains ".."')
+  for (let subdir of subdirs) {
+    if (subdir.match(rx)) {
+      console.error('stream: HACKING ATTEMPT subdir=%j matched %s'
+                   , subdir, rx.toString())
       res.status(404).end('FUCK OFF')
       return
     }
   }
 
-  if (file === '..'){
-    console.error('stream: HACKING ATTEMPT file == ".."')
+  if (file.match(rx)) {
+    console.error('stream: HACKING ATTEMPT file=%j matched %s'
+                 , file, rx.toString())
     res.status(404).end('FUCK OFF')
     return
   }
@@ -72,6 +78,7 @@ function streamVideo(req, res, next) {
 
   subdirs.unshift('/')
   var nmldir = path.resolve.apply(path, subdirs)
+  nmldir = nmldir.slice(1) // take the / off
 
   var app_cfg = app.get('app config by name')
   var root_fqdn = app_cfg['video roots'][root].fqdn
