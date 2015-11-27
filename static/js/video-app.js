@@ -1619,17 +1619,17 @@
         self.btnNum = 0
       }
 
-      function lookupSuccess(data) {
-        info('FileBrowser: selectChanged: lookupSuccess: data =', data)
+      function readdirSuccess(data) {
+        info('FileBrowser: selectChanged: readdirSuccess: data =', data)
         self.addDirSelect(data.dirs, data.files)
       }
 
-      $.ajax({ url  : 'lookup'
+      $.ajax({ url  : 'readdir'
              , type : 'GET'
              , data : { root    : val
                       , subdirs : self.subdirs
                       }
-             , success : lookupSuccess
+             , success : readdirSuccess
 
              })
     } //end: selectChanged()
@@ -1739,17 +1739,17 @@
         if ( dirs.some(function(e,i,a) { return e == val }) ) {
           self.subdirs.push(val)
 
-          function lookupSuccess(data) {
-            info('FileBrowser__addDirSelect: disSelectChanged: lookupSuccess; data = ', data)
+          function readdirSuccess(data) {
+            info('FileBrowser__addDirSelect: disSelectChanged: readdirSuccess; data = ', data)
             self.addDirSelect(data.dirs, data.files)
           }
 
-          $.ajax({ url     : 'lookup'
+          $.ajax({ url     : 'readdir'
                  , type    : 'GET'
                  , data    : { root    : self.selectedRoot
                              , subdirs : self.subdirs
                              }
-                 , success : lookupSuccess
+                 , success : readdirSuccess
                  })
         }
         else if ( files.some(function(e,i,a) { return e == val }) ) {
@@ -1912,7 +1912,8 @@
         //return false
       } //end: onKeyDown()
 
-      this.$select.on('keydown', onKeyDown)
+      if (this.$select) //non-empty box
+        this.$select.on('keydown', onKeyDown)
     } //end: DirSelect___setupKeyboardEvents()
 
   function LaunchVideoContentButton(file) {
