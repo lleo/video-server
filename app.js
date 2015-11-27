@@ -91,21 +91,20 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(cookieParser())
 app.use(express.static(path.join(__dirname, 'static')))
 
-let index  = require('./routes/index')
-  , stream = require('./routes/stream')
-  , lookup = require('./routes/lookup')
+let index     = require('./routes/index')
+  , stream    = require('./routes/stream')
+  , readdir   = require('./routes/readdir')
+  , findtrack = require('./routes/findtrack')
 
-debug("typeof lookup = ", typeof lookup)
+debug("typeof readdir = ", typeof readdir)
 
 app.get('/', index)
-app.get('/lookup', lookup)
-//app.get('/stream/:subdirs*/:file', stream)
+app.get('/readdir', readdir)
+app.get('/findtrack', findtrack)
 
 //var stream_rx = /\/stream\/([^\/]+)((?:\/[^\/]+(?:\/[^\/]+)*)?)\/([^\/]+)$/;
 var stream_rx = /\/stream\//;
 app.get(stream_rx, stream)
-//app.get(/^\/stream\//, stream)
-//app.get('/stream', stream)
 
 // error handlers
 
