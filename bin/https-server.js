@@ -10,13 +10,16 @@ var debug = require('debug')('debug');
 var https = require('https');
 
 // Generated VIA:
-// openssl genrsa -out privatekey.pem 1024
-var key = fs.readFileSync('privatekey.pem')
+// openssl genrsa -out private-key-for-self-signed-cert.pem 1024
+var key = fs.readFileSync('private-key-for-self-signed-cert.pem')
 
 // Generated VIA:
-// openssl req -new -key privatekey.pem -out certrequest.csr
-// openssl x509 -req -in certrequest.csr -signkey privatekey.pem -out certificate.pem
-var cert = fs.readFileSync('certificate.pem')
+// openssl req -new -key private-key-for-self-signed-cert.pem \
+//             -out cert-req-for-self-signed-cert.csr
+// openssl x509 -req -in cert-req-for-self-signed-cert.csr \
+//              -signkey private-key-for-self-signed-cert.pem \
+//              -out     self-signed-cert.pem
+var cert = fs.readFileSync('self-signed-cert.pem')
 
 /**
  * Get port from environment and store in Express.
