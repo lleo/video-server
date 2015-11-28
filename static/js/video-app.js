@@ -17,19 +17,15 @@
     console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
     VideoApp.setLogLevel(this.debug)
 
-    var videoContents = new VideoContents(cfg['load'], this)
     var videoControls = new VideoControls(cfg['controls config'], this)
+    this.videoControls = videoControls
+
+    var videoContents = new VideoContents(cfg['load'], this)
+    this.videoContents = videoContents
+
     var fileBrowser   = new FileBrowser(cfg['video root names'], this)
 
     this.fileBrowser = fileBrowser
-
-    /*
-     * See comment below on *Multiple Videos*
-     */
-    this.videoContents = videoContents
-
-    this.videoControls = videoControls
-
   } //end: VideoApp()
 
   VideoApp._logLevel = 0 //default setting
@@ -115,6 +111,7 @@
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.id)
                 .addClass('videoContents')
+                .addClass('nocursor')
 
     this.contents = [] //array of VideoContent objects
     this._isFullscreen = false
@@ -143,7 +140,7 @@
 
       /* Remove any video content that exists
        * 
-       * Node: *Multiple Videos*
+       * NOTE: *Multiple Videos*
        * Eventually I'll guard this with a setting that allows multiple
        * video streams to be open controled with one set of controls.
        * The reason for watching multiple streams at the same time is to
@@ -170,6 +167,7 @@
     function VideoContents___setupEvents() {
       if (this._eventsSetup) return
       this._setupKeyboardEvents()
+      this._setupMouseEvents()
       this._eventsSetup = true
     }
 
@@ -266,7 +264,128 @@
 
       //this.$dom.on('keypress', onKeyPress)
       $(document).on('keypress', onKeyPress)
-    }
+    } //end: VideoContents___setupKeyboardEvents()
+
+  VideoContents.prototype._setupMouseEvents =
+    function VideoContents___setupMouseEvents() {
+      if (this._eventsSetup) return
+
+      var hideBothTimerId
+        , firstThrottleTimerExecuted = true
+        , overControls = false
+
+      var self = this
+
+      function onMouseMove() {
+        //info('onMouseMove: called')
+        // The algorithm is as follows:
+        // 0 - turn off the on 'mousemove' event handler
+        //   - show controls & cursor & start throttling the 'mousemove' events
+        // 1 - if 2000ms after the first throttle timer has fired,
+        //     then hide the controls & cursor
+        var videoControls = self.videoApp.videoControls
+
+        // Given that every time 50ms after a 'mousemove' event we disable
+        // and then reenable this timer function for 2000ms,
+        // **this function only fires** when no 'mousemove' events has
+        // occured for over 2050ms.
+        function hideBothTimerFn() {
+          // NOTE: The variable overControls is a boolean that is set true
+          // by the 'mouseenter' and false by the 'mouseleave' events
+          // See the onMouse{Enter,Leave} functions declared below.
+          if (!overControls && !videoControls.$dom.hasClass('hide'))
+            videoControls.$dom.addClass('hide')
+
+          if (!overControls && !self.$dom.hasClass('nocursor'))
+            self.$dom.addClass('nocursor')
+
+          // reset the firstThrottleTimerExecuted & hideBothTimerId
+          firstThrottleTimerExecuted = true
+          hideBothTimerId = undefined
+        }
+
+        // This is the second part of the throttle algorithm.
+        // First, every time onMouseMove() fires we turn off watching for
+        //   'mousemove' events and set this timer fuction (see below).
+        // When this timer function fires we turn the watch for 'mousemove'
+        //   events back on. So for 50ms the 'mousemove' events were ignored.
+        function throttleTimerFn() {
+          self.$dom.on('mousemove', onMouseMove)
+
+          // IF the the hideBothTimerFn has already been set
+          // OR this is the first in a sequence of 'mousemove' events
+          if (hideBothTimerId || firstThrottleTimerExecuted) {
+            clearTimeout(hideBothTimerId)
+            firstThrottleTimerExecuted = false
+            hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
+          }
+        }
+
+        // mouse moved -> disable on 'mousemove' events; throttling
+        self.$dom.off('mousemove', onMouseMove)
+
+        // mouse moved -> show controls
+        if ( videoControls.$dom.hasClass('hide') ) {
+          videoControls.$dom.removeClass('hide')
+        }
+
+        // mouse moved -> show cursor
+        if ( self.$dom.hasClass('nocursor') ) {
+          self.$dom.removeClass('nocursor')
+        }
+
+        // in 50ms (1/20th sec) reenable 'mousemove' events
+        setTimeout(throttleTimerFn, 50)
+      } //end: onMouseMove()
+
+      // This was a test to see if there was any jQuery or Browser trottleing
+      // of 'mousemove' events.
+      //function onMouseMove(e) { //[test]
+      //  info('onMouseMove: overControls = %o', overControls)
+      //
+      //  function hideBothTimerFn() {
+      //    info('hideBothTimerFn: overControls = %o', overControls)
+      //    hideBothTimerId = undefined
+      //    if (!overControls) {
+      //      if ( !self.videoApp.videoControls.$dom.hasClass('hide') ) {
+      //        self.videoApp.videoControls.$dom.addClass('hide')
+      //      }
+      //      if ( !self.$dom.hasClass('nocursor') ) {
+      //        self.$dom.addClass('nocursor')
+      //      }
+      //    }
+      //  }
+      //
+      //  // mouse moved -> show controls
+      //  if ( self.videoApp.videoControls.$dom.hasClass('hide') ) {
+      //
+      //    self.videoApp.videoControls.$dom.removeClass('hide')
+      //  }
+      //
+      //  // mouse moved -> show cursor
+      //  if ( self.$dom.hasClass('nocursor') ) {
+      //
+      //    self.$dom.removeClass('nocursor')
+      //  }
+      //
+      //  clearTimeout(hideBothTimerId)
+      //  hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
+      //} //end: onMouseMove() [test]
+      this.$dom.on('mousemove', onMouseMove)
+
+      function onMouseEnter(e) {
+        overControls = true
+      }
+      function onMouseLeave(e) {
+        overControls = false
+      }
+      console.log('VideoContents___setupMouseEvents: this = %o', this)
+      console.log('VideoContents___setupMouseEvents: this.videoApp = %o', this.videoApp)
+      console.log('VideoContents___setupMouseEvents: this.videoApp.videoControls = %o', this.videoApp.videoControls)
+      this.videoApp.videoControls.$dom.on('mouseenter', onMouseEnter)
+      this.videoApp.videoControls.$dom.on('mouseleave', onMouseLeave)
+
+    } //end: VideoContents___setupMouseEvents()
 
   VideoContents.prototype.startBusy = function VideoContents__startBusy() {
     info('VideoContents__startBusy:')
@@ -500,7 +619,6 @@
                 .attr('id', this.ids.div)
                 .attr('tabindex', 1)
                 .addClass('videoContent')
-                .addClass('nocursor')
                 .append( this.$video )
 
     if (0 == vidNum) {
@@ -515,7 +633,7 @@
     if (this._eventsSetup) return
     
     this._setupVideoEvents()
-    this._setupMouseEvents()
+    //this._setupMouseEvents()
     //this._setupKeyboardEvents()
 
     this._eventsSetup = true
@@ -615,123 +733,123 @@
   //    $(document).on('keypress', onKeyPress)
   //  }
 
-  VideoContent.prototype._setupMouseEvents =
-    function VideoContent___setupMouseEvents() {
-      if (this._eventsSetup) return
-
-      var hideBothTimerId
-        , firstThrottleTimerExecuted = true
-        , overControls = false
-
-      var self = this
-
-      function onMouseMove() {
-        //info('onMouseMove: called')
-        // The algorithm is as follows:
-        // 0 - turn off the on 'mousemove' event handler
-        //   - show controls & cursor & start throttling the 'mousemove' events
-        // 1 - if 2000ms after the first throttle timer has fired,
-        //     then hide the controls & cursor
-        var videoControls = self.videoApp.videoControls
-
-        // Given that every time 50ms after a 'mousemove' event we disable
-        // and then reenable this timer function for 2000ms,
-        // **this function only fires** when no 'mousemove' events has
-        // occured for over 2050ms.
-        function hideBothTimerFn() {
-          // NOTE: The variable overControls is a boolean that is set true
-          // by the 'mouseenter' and false by the 'mouseleave' events
-          // See the onMouse{Enter,Leave} functions declared below.
-          if (!overControls && !videoControls.$dom.hasClass('hide'))
-            videoControls.$dom.addClass('hide')
-
-          if (!overControls && !self.$dom.hasClass('nocursor'))
-            self.$dom.addClass('nocursor')
-
-          // reset the firstThrottleTimerExecuted & hideBothTimerId
-          firstThrottleTimerExecuted = true
-          hideBothTimerId = undefined
-        }
-
-        // This is the second part of the throttle algorithm.
-        // First, every time onMouseMove() fires we turn off watching for
-        //   'mousemove' events and set this timer fuction (see below).
-        // When this timer function fires we turn the watch for 'mousemove'
-        //   events back on. So for 50ms the 'mousemove' events were ignored.
-        function throttleTimerFn() {
-          self.$dom.on('mousemove', onMouseMove)
-
-          // IF the the hideBothTimerFn has already been set
-          // OR this is the first in a sequence of 'mousemove' events
-          if (hideBothTimerId || firstThrottleTimerExecuted) {
-            clearTimeout(hideBothTimerId)
-            firstThrottleTimerExecuted = false
-            hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
-          }
-        }
-
-        // mouse moved -> disable on 'mousemove' events; throttling
-        self.$dom.off('mousemove', onMouseMove)
-
-        // mouse moved -> show controls
-        if ( videoControls.$dom.hasClass('hide') ) {
-          videoControls.$dom.removeClass('hide')
-        }
-
-        // mouse moved -> show cursor
-        if ( self.$dom.hasClass('nocursor') ) {
-          self.$dom.removeClass('nocursor')
-        }
-
-        // in 50ms (1/20th sec) reenable 'mousemove' events
-        setTimeout(throttleTimerFn, 50)
-      } //end: onMouseMove()
-
-      // This was a test to see if there was any jQuery or Browser trottleing
-      // of 'mousemove' events.
-      //function onMouseMove(e) { //[test]
-      //  info('onMouseMove: overControls = %o', overControls)
-      //
-      //  function hideBothTimerFn() {
-      //    info('hideBothTimerFn: overControls = %o', overControls)
-      //    hideBothTimerId = undefined
-      //    if (!overControls) {
-      //      if ( !self.videoApp.videoControls.$dom.hasClass('hide') ) {
-      //        self.videoApp.videoControls.$dom.addClass('hide')
-      //      }
-      //      if ( !self.$dom.hasClass('nocursor') ) {
-      //        self.$dom.addClass('nocursor')
-      //      }
-      //    }
-      //  }
-      //
-      //  // mouse moved -> show controls
-      //  if ( self.videoApp.videoControls.$dom.hasClass('hide') ) {
-      //
-      //    self.videoApp.videoControls.$dom.removeClass('hide')
-      //  }
-      //
-      //  // mouse moved -> show cursor
-      //  if ( self.$dom.hasClass('nocursor') ) {
-      //
-      //    self.$dom.removeClass('nocursor')
-      //  }
-      //
-      //  clearTimeout(hideBothTimerId)
-      //  hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
-      //} //end: onMouseMove() [test]
-      this.$dom.on('mousemove', onMouseMove)
-
-      function onMouseEnter(e) {
-        overControls = true
-      }
-      function onMouseLeave(e) {
-        overControls = false
-      }
-      this.videoApp.videoControls.$dom.on('mouseenter', onMouseEnter)
-      this.videoApp.videoControls.$dom.on('mouseleave', onMouseLeave)
-
-    } //end: VideoContent___setupMouseEvents()
+  //VideoContent.prototype._setupMouseEvents =
+  //  function VideoContent___setupMouseEvents() {
+  //    if (this._eventsSetup) return
+  //
+  //    var hideBothTimerId
+  //      , firstThrottleTimerExecuted = true
+  //      , overControls = false
+  //
+  //    var self = this
+  //
+  //    function onMouseMove() {
+  //      //info('onMouseMove: called')
+  //      // The algorithm is as follows:
+  //      // 0 - turn off the on 'mousemove' event handler
+  //      //   - show controls & cursor & start throttling the 'mousemove' events
+  //      // 1 - if 2000ms after the first throttle timer has fired,
+  //      //     then hide the controls & cursor
+  //      var videoControls = self.videoApp.videoControls
+  //
+  //      // Given that every time 50ms after a 'mousemove' event we disable
+  //      // and then reenable this timer function for 2000ms,
+  //      // **this function only fires** when no 'mousemove' events has
+  //      // occured for over 2050ms.
+  //      function hideBothTimerFn() {
+  //        // NOTE: The variable overControls is a boolean that is set true
+  //        // by the 'mouseenter' and false by the 'mouseleave' events
+  //        // See the onMouse{Enter,Leave} functions declared below.
+  //        if (!overControls && !videoControls.$dom.hasClass('hide'))
+  //          videoControls.$dom.addClass('hide')
+  //
+  //        if (!overControls && !self.$dom.hasClass('nocursor'))
+  //          self.$dom.addClass('nocursor')
+  //
+  //        // reset the firstThrottleTimerExecuted & hideBothTimerId
+  //        firstThrottleTimerExecuted = true
+  //        hideBothTimerId = undefined
+  //      }
+  //
+  //      // This is the second part of the throttle algorithm.
+  //      // First, every time onMouseMove() fires we turn off watching for
+  //      //   'mousemove' events and set this timer fuction (see below).
+  //      // When this timer function fires we turn the watch for 'mousemove'
+  //      //   events back on. So for 50ms the 'mousemove' events were ignored.
+  //      function throttleTimerFn() {
+  //        self.$dom.on('mousemove', onMouseMove)
+  //
+  //        // IF the the hideBothTimerFn has already been set
+  //        // OR this is the first in a sequence of 'mousemove' events
+  //        if (hideBothTimerId || firstThrottleTimerExecuted) {
+  //          clearTimeout(hideBothTimerId)
+  //          firstThrottleTimerExecuted = false
+  //          hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
+  //        }
+  //      }
+  //
+  //      // mouse moved -> disable on 'mousemove' events; throttling
+  //      self.$dom.off('mousemove', onMouseMove)
+  //
+  //      // mouse moved -> show controls
+  //      if ( videoControls.$dom.hasClass('hide') ) {
+  //        videoControls.$dom.removeClass('hide')
+  //      }
+  //
+  //      // mouse moved -> show cursor
+  //      if ( self.$dom.hasClass('nocursor') ) {
+  //        self.$dom.removeClass('nocursor')
+  //      }
+  //
+  //      // in 50ms (1/20th sec) reenable 'mousemove' events
+  //      setTimeout(throttleTimerFn, 50)
+  //    } //end: onMouseMove()
+  //
+  //    // This was a test to see if there was any jQuery or Browser trottleing
+  //    // of 'mousemove' events.
+  //    //function onMouseMove(e) { //[test]
+  //    //  info('onMouseMove: overControls = %o', overControls)
+  //    //
+  //    //  function hideBothTimerFn() {
+  //    //    info('hideBothTimerFn: overControls = %o', overControls)
+  //    //    hideBothTimerId = undefined
+  //    //    if (!overControls) {
+  //    //      if ( !self.videoApp.videoControls.$dom.hasClass('hide') ) {
+  //    //        self.videoApp.videoControls.$dom.addClass('hide')
+  //    //      }
+  //    //      if ( !self.$dom.hasClass('nocursor') ) {
+  //    //        self.$dom.addClass('nocursor')
+  //    //      }
+  //    //    }
+  //    //  }
+  //    //
+  //    //  // mouse moved -> show controls
+  //    //  if ( self.videoApp.videoControls.$dom.hasClass('hide') ) {
+  //    //
+  //    //    self.videoApp.videoControls.$dom.removeClass('hide')
+  //    //  }
+  //    //
+  //    //  // mouse moved -> show cursor
+  //    //  if ( self.$dom.hasClass('nocursor') ) {
+  //    //
+  //    //    self.$dom.removeClass('nocursor')
+  //    //  }
+  //    //
+  //    //  clearTimeout(hideBothTimerId)
+  //    //  hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
+  //    //} //end: onMouseMove() [test]
+  //    this.$dom.on('mousemove', onMouseMove)
+  //
+  //    function onMouseEnter(e) {
+  //      overControls = true
+  //    }
+  //    function onMouseLeave(e) {
+  //      overControls = false
+  //    }
+  //    this.videoApp.videoControls.$dom.on('mouseenter', onMouseEnter)
+  //    this.videoApp.videoControls.$dom.on('mouseleave', onMouseLeave)
+  //
+  //  } //end: VideoContent___setupMouseEvents()
 
   VideoContent.prototype._setupVideoEvents =
     function VideoContent___setupVideoEvents() {
@@ -797,7 +915,8 @@
         var videoControls = self.videoApp.videoControls
         var videoContents = self.videoApp.videoContents
 
-        videoControls.$positionRng[0].max = self.$video[0].duration
+        if (0 == self.vidNum)
+          videoControls.$positionRng[0].max = self.$video[0].duration
 
         if (self.initTime) {
           console.log('onLoadedData: self.initTime = %f', self.initTime)
