@@ -28,48 +28,45 @@
     this.fileBrowser = fileBrowser
   } //end: VideoApp()
 
-  VideoApp._logLevel = 0 //default setting
-  VideoApp._logLevels = ['info', 'warn', 'crit', 'none', 'error']
+  var LogLevel = 0 //default setting
+  var LogLevels = ['info', 'warn', 'crit', 'none', 'error']
   VideoApp.getLogLevel = function VideoApp_getLogLevel(level) {
-    if (typeof level != 'string') return VideoApp._logLevel
+    if (typeof level != 'string') return LogLevel
 
-    var lvl = VideoApp._logLevels.indexOf(level)
+    var lvl = LogLevels.indexOf(level)
 
-    if (lvl < 0) return VideoApp._logLevel
+    if (lvl < 0) return LogLevel
 
     return lvl
   }
   VideoApp.setLogLevel = function VideoApp_setLogLevel(level) {
-    return VideoApp._logLevel = VideoApp.getLogLevel(level)
+    return LogLevel = VideoApp.getLogLevel(level)
   }
-  var _slice    = Array.prototype.slice
+  var _slice   = Array.prototype.slice
+  var info_lvl = VideoApp.getLogLevel('info')
   var info = VideoApp.info = function info() {
     var args
-      , info_lvl = VideoApp.getLogLevel('info')
-      , debug_lvl = VideoApp.getLogLevel()
-    if (info_lvl >= debug_lvl) {
+    if (info_lvl >= VideoApp.getLogLevel()) {
       args = _slice.apply(arguments)
       if (args.length == 0) args.push('')
       args[0] = '[INFO] '+args[0]
       console.log.apply(console, args)
     }
   }
+  var warn_lvl = VideoApp.getLogLevel('warn')
   var warn = VideoApp.warn = function warn() {
     var args
-      , warn_lvl = VideoApp.getLogLevel('warn')
-      , debug_lvl = VideoApp.getLogLevel()
-    if (warn_lvl >= debug_lvl) {
+    if (warn_lvl >= VideoApp.getLogLevel()) {
       args = _slice.apply(arguments)
       if (args.length == 0) args.push('')
       args[0] = '[WARN] '+args[0]
       console.log.apply(console, args)
     }
   }
+  var crit_lvl = VideoApp.getLogLevel('crit')
   var crit = VideoApp.crit = function crit() {
     var args
-      , crit_lvl = VideoApp.getLogLevel('crit')
-      , debug_lvl = VideoApp.getLogLevel()
-    if (crit_lvl >= debug_lvl) {
+    if (crit_lvl >= VideoApp.getLogLevel()) {
       args = _slice.apply(arguments)
       if (args.length == 0) args.push('')
       args[0] = '[CRIT] '+args[0]
