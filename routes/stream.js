@@ -40,9 +40,9 @@ function streamVideo(req, res, next) {
   var root = p[2]
   var subdirs = p.slice(3,p.length-1)
   var file = p[p.length-1]
-  console.log('stream: root = %j', root)
-  console.log('stream: subdirs = %j', subdirs)
-  console.log('stream: file = %j', file)
+  //console.log('stream: root = %j', root)
+  //console.log('stream: subdirs = %j', subdirs)
+  //console.log('stream: file = %j', file)
 
   // See routes/index.js for how I came up with this rx
   var rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
@@ -85,10 +85,10 @@ function streamVideo(req, res, next) {
 
   var vid_path = [root_fqdn, nmldir]
   vid_path.push(file)
-  console.log('stream: vid_path = %j', vid_path)
+  //console.log('stream: vid_path = %j', vid_path)
 
   var video_fqfn = path.join.apply(path, vid_path)
-  console.log("stream: video_fqfn=%s", video_fqfn)
+  //console.log("stream: video_fqfn=%s", video_fqfn)
 
   var ext = path.extname(video_fqfn).toLowerCase().replace(/^\./, '')
   var vidstat, total
@@ -107,11 +107,11 @@ function streamVideo(req, res, next) {
   console.log("stream: headers =", util.inspect(req.headers))
 
   mimetype = ext2mimeType[ext]
-  console.log("stream: !!! ext=%s; mimetype=%s;", ext, mimetype)
+  //console.log("stream: !!! ext=%s; mimetype=%s;", ext, mimetype)
 
   if ( req.headers['range'] ) {
     var range = req.headers.range
-      , parts = range.replace(/bytes=/, "").split("-")
+      , parts = range.replace('bytes=', "").split("-")
       , partialstart = parts[0]
       , partialend = parts[1]
       , start = parseInt(partialstart, 10)
