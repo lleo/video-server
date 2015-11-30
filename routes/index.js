@@ -45,27 +45,31 @@ module.exports = function(req, res, next){
 
   console.log('index: req.query = %j', req.query)
 
-
-  ;(function checkQuery() {
+  var queryOk = (function checkQuery() {
     var load = {}
     var root, subdirs, file, time
     var rootNames = cfg['video root names']
     console.log('checkQuery: req.query == trueish')
     console.log('checkQuery: ', util.inspect(req.query, {depth:null,colors:true}))
+    if ( !Object.keys(req.query).length ) {
+      console.log('index: checkQuery: req.query has no keys; fine, skipping the rest of checkQuery.')
+      return true
+    }
+
     root = req.query.root
-    if (!root) { next(); return }
-    if ( !rootNames.some(function(e){ return e == root }) ) { next(); return }
+    if (!root) return false
+    if ( !rootNames.some(function(e){ return e == root }) ) return false
     load.root = root
 
     subdirs = req.query.subdirs
-    if (!subdirs) { next(); return }
-    if (!u.isArray(subdirs)) { next(); return }
-    if ( !subdirs.every(isNonEmptyString) ) { next(); return }
+    if (!subdirs) return false
+    if (!u.isArray(subdirs)) return false
+    if ( !subdirs.every(isNonEmptyString) ) return false
     load.subdirs = req.query.subdirs
 
     file = req.query.file
-    if (!file) { next(); return }
-    if (!isNonEmptyString(file)) { next(); return }
+    if (!file) return false
+    if (!isNonEmptyString(file)) return false
     load.file = file
 
     time = req.query.time
@@ -83,8 +87,19 @@ module.exports = function(req, res, next){
     }
 
     cfg.load = load
+
+    return true
   })()
 
+  if (!queryOk) {
+    console.log('index: POST checkQuery(): BAD query calling next()')
+    next()
+    // FIXME: maybe I should do: http status 400 bad client request
+    // res.status(400).render('bad_query')
+    // and implemnets a nicer looking bad_query.jade
+    return
+  }
+  
   /* FROM the node.js REPL on v5.1.0
    * > rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/
    * /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/
@@ -133,18 +148,20 @@ module.exports = function(req, res, next){
   if (cfg.load) {
     console.log('index: cfg.load = %s', util.inspect(cfg.load, {depth:null,colors:true}))
     rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
+    // http response code 403 == Forbidden
+    // see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
     for (let subdir of cfg.load.subdirs) {
       console.log('subdir = %j', subdir)
       if (subdir.match(rx)) {
         console.log('index: %j.match(%s)', subdir, rx.toString())
-        res.status(404).end('FUCK OFF')
+        res.status(403).end('FUCK OFF')
         return
       }
     }
     console.log('index: subdirs passed')
     if (cfg.load.file.match(rx)) {
       console.log('index: HACKING ATTEMPTY subdir contained ..')
-      res.status(404).end('FUCK OFF')
+      res.status(403).end('FUCK OFF')
       return
     }
     console.log('index: file passed')
