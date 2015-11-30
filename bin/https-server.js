@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+var path = require('path');
 var fs = require('fs');
 var app = require('../app');
 var debug = require('debug')('debug');
@@ -27,6 +28,7 @@ var cert = fs.readFileSync('self-signed-cert.pem')
 
 var port = normalizePort(process.env.PORT || '3443');
 app.set('port', port);
+console.log('%s: PORT = %d', path.parse(__filename).name, port)
 
 /**
  * Create HTTP server.

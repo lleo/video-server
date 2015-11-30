@@ -4,6 +4,7 @@
  * Module dependencies.
  */
 
+var path = require('path');
 var app = require('../app');
 var debug = require('debug')('debug');
 var http = require('http');
@@ -14,6 +15,7 @@ var http = require('http');
 
 var port = normalizePort(process.env.PORT || '3001');
 app.set('port', port);
+console.log('%s: PORT = %d', path.parse(__filename).name, port)
 
 /**
  * Create HTTP server.
