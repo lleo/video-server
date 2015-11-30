@@ -5,13 +5,11 @@
 //This wrapper function is wholly unnecessary but whatever ...
 (function(window, document, undefined) {
 
-  // OIY VEI MIR! This is such a lame logging system!
-
-  
   function VideoApp(_cfg) {
     var cfg = _.cloneDeep(_cfg) || {}
 
     this.cfg = cfg
+    this._eventsSetup = false
 
     this.debug = cfg.debug || 'info'
     console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
@@ -26,21 +24,77 @@
     var fileBrowser   = new FileBrowser(cfg['video root names'], this)
 
     this.fileBrowser = fileBrowser
+
+    this._setupEvents()
   } //end: VideoApp()
 
-  var LogLevel = 0 //default setting
-  var LogLevels = ['info', 'warn', 'crit', 'none', 'error']
+  VideoApp.prototype._setupEvents = function VideoApp___setupEvents() {
+    if (this._eventsSetup) return
+
+    this._setupWindowEvents()
+
+    return this._eventsSetup = true
+  } //end: VideoApp___setupEvents()
+
+  VideoApp.prototype._setupWindowEvents =
+    function VideoApp__setupWindowEvents() {
+      var self = this
+
+      var videoContents = self.videoContents
+      var videoContent = videoContents.contents[0] //could be undefined
+
+      $(window).on('popstate', function onPopState(e) {
+        info('VideoApp: onPopState: e = %o', e)
+
+        var oldState = e.originalEvent.state
+        var curState = self.getState()
+        info('VideoContent: onPopState: oldState = %o', oldState)
+        info('VideoContent: onPopState: curState = %o', curState)
+
+        var otime = oldState.time
+        if (typeof otime == 'string') {
+          info('VideoContent: onPopState: otime is a string %o', otime)
+          otime = parseFloat(otime)
+          info('VideoContent: onPopState: otime = %f', otime)
+        }
+
+        var ctime = curState && curState.time
+
+        if ( stateEqualExceptTime(oldState, curState)) {
+          info('VideoContent: onPopState: oldState & curState (minus time) are the same')
+          videoContents.setPosition(otime)
+        }
+        else {
+          videoContents.addVideoContent( oldState.root
+                                       , oldState.subdirs
+                                       , oldState.file
+                                                     , otime )
+        }
+      })
+    } //end: VideoApp__setupWindowEvents()
+
+  VideoApp.prototype.getState = function VideoApp__getState() {
+    // Currently the only state that matters is this.videoContents.state
+    // For now, I'll return it at the state of the whole app.
+    return this.videoContents.getState()
+  }
+
+  /*
+   * Logging system. It BLOWS hard, but it used to SUCK worse.
+   */
+  var logLevel = 0 //default setting
+  var logLevels = ['info', 'warn', 'crit', 'none', 'error']
   VideoApp.getLogLevel = function VideoApp_getLogLevel(level) {
-    if (typeof level != 'string') return LogLevel
+    if (typeof level != 'string') return logLevel
 
-    var lvl = LogLevels.indexOf(level)
+    var lvl = logLevels.indexOf(level)
 
-    if (lvl < 0) return LogLevel
+    if (lvl < 0) return logLevel
 
     return lvl
   }
   VideoApp.setLogLevel = function VideoApp_setLogLevel(level) {
-    return LogLevel = VideoApp.getLogLevel(level)
+    return logLevel = VideoApp.getLogLevel(level)
   }
   var _slice   = Array.prototype.slice
   var info_lvl = VideoApp.getLogLevel('info')
@@ -129,8 +183,14 @@
     }
 
     this._setupEvents()
-  }
+  } //end: VideoContents constructor
 
+  VideoContents.prototype.getState = function VideoContents__getState() {
+    // Ok, I don't support multiple videos yet so just return the state
+    // of this.contents[0].getState() if it exists, else undefined.
+    return this.contents.length ? this.contents[0].getState() : undefined
+  } //end: VideoContents__getState()
+  
   VideoContents.prototype.addVideoContent =
     function VideoContents__addVideoContent(root, subdirs, file, initTime) {
       'use strict';
@@ -636,6 +696,10 @@
     this._setupEvents()
   } //end: VideoContent()
 
+  VideoContent.prototype.getState = function VideoContent__getState() {
+    return _.cloneDeep(this.state)
+  }
+
   VideoContent.prototype._setupEvents = function VideoContent___setupEvents() {
     if (this._eventsSetup) return
     
@@ -859,6 +923,7 @@
   //  } //end: VideoContent___setupMouseEvents()
 
   function stateEqualExceptTime(o, n) {
+    if (_.isUndefined(o) || _.isUndefined(n)) return false
     if ( _.isEqual(o.root, n.root) &&
          _.isEqual(o.subdirs, n.subdirs) &&
          _.isEqual(o.file, n.file)          ) {
@@ -876,30 +941,30 @@
       
       var self = this
 
-      $(window).on('popstate', function onPopState(e) {
-        info('VideoContent: onPopState: e = %o', e)
-        var oldState = e.originalEvent.state
-        var curState = _.cloneDeep(self.state)
-        info('VideoContent: onPopState: oldState = %o', oldState)
-        info('VideoContent: onPopState: curState = %o', curState)
-        var otime = oldState.time
-        if (typeof otime == 'string') {
-          info('VideoContent: onPopState: otime is a string %o', otime)
-          otime = parseFloat(otime)
-          info('VideoContent: onPopState: otime = %f', otime)
-        }
-        var ctime = curState.time
-        if ( stateEqualExceptTime(oldState, curState)) {
-          info('VideoContent: onPopState: oldState & curState (minus time) are the same')
-          self.setPosition(otime)
-        }
-        else {
-          self.videoApp.videoContents.addVideoContent( oldState.root
-                                                     , oldState.subdirs
-                                                     , oldState.file
-                                                     , otime )
-        }
-      })
+      //$(window).on('popstate', function onPopState(e) {
+      //  info('VideoContent: onPopState: e = %o', e)
+      //  var oldState = e.originalEvent.state
+      //  var curState = _.cloneDeep(self.state)
+      //  info('VideoContent: onPopState: oldState = %o', oldState)
+      //  info('VideoContent: onPopState: curState = %o', curState)
+      //  var otime = oldState.time
+      //  if (typeof otime == 'string') {
+      //    info('VideoContent: onPopState: otime is a string %o', otime)
+      //    otime = parseFloat(otime)
+      //    info('VideoContent: onPopState: otime = %f', otime)
+      //  }
+      //  var ctime = curState.time
+      //  if ( stateEqualExceptTime(oldState, curState)) {
+      //    info('VideoContent: onPopState: oldState & curState (minus time) are the same')
+      //    self.setPosition(otime)
+      //  }
+      //  else {
+      //    self.videoApp.videoContents.addVideoContent( oldState.root
+      //                                               , oldState.subdirs
+      //                                               , oldState.file
+      //                                               , otime )
+      //  }
+      //})
 
       $video.on('loadeddata', function onLoadedData(e) {
         info("onLoadedData: e.target.id=%s", e.target.id)
@@ -1766,6 +1831,11 @@
     this._setupEvents()
   } //end: FileBroswer()
 
+  FileBrowser.prototype.getState = function FileBrowser__getState() {
+    // NOOP
+    return undefined
+  } //end: FileBrowser__getState()
+
   FileBrowser.prototype._setupEvents = function FileBrowser___setupEvents() {
     if (this._eventsSetup) return
 
@@ -1978,6 +2048,11 @@
 
     this._setupEvents()
   } //end: DirSelect()
+
+  DirSelect.prototype.getState = function DirSelect__getState() {
+    // NOOP
+    return undefined
+  } //end: DirSelect__getState()
 
   DirSelect.prototype.focusNext = function DirSelect__focusNext() {
     var lastIdx = this.fileBrowser.dirSelects.length - 1
