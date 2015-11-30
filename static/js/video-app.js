@@ -527,6 +527,16 @@
       }
     } //end: VideoContents__toggleFullscreen()
 
+  VideoContents.prototype.setMark = function VideoContents__setMark() {
+    if (!this.contents.length) return
+
+    var state = _.cloneDeep(this.contents[0].state)
+    var qstr = $.param( state )
+
+    var url = window.location.origin + window.location.pathname + "?" + qstr
+
+    history.pushState(state, null, url)
+  } //end: VideoContents__setMark()
 
   function VideoContent(vidNum, root, subdirs, file, initTime, videoApp) {
     info('VideoContent() constructor')
@@ -848,6 +858,15 @@
   //
   //  } //end: VideoContent___setupMouseEvents()
 
+  function stateEqualExceptTime(o, n) {
+    if ( _.isEqual(o.root, n.root) &&
+         _.isEqual(o.subdirs, n.subdirs) &&
+         _.isEqual(o.file, n.file)          ) {
+      return true
+    }
+    return false
+  }
+
   VideoContent.prototype._setupVideoEvents =
     function VideoContent___setupVideoEvents() {
       if (this._eventsSetup) return
@@ -857,14 +876,6 @@
       
       var self = this
 
-      function stateEqualExceptTime(o, n) {
-        if ( _.isEqual(o.root, n.root) &&
-             _.isEqual(o.subdirs, n.subdirs) &&
-             _.isEqual(o.file, n.file)          ) {
-          return true
-        }
-        return false
-      }
       $(window).on('popstate', function onPopState(e) {
         info('VideoContent: onPopState: e = %o', e)
         var oldState = e.originalEvent.state
