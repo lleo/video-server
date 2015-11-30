@@ -5,7 +5,7 @@ let debuglog       = require('debug')
   , path           = require('path')
   , express        = require('express')
   , favicon        = require('serve-favicon')
-  , logger         = require('morgan')
+  , morgan         = require('morgan')
   , cookieParser   = require('cookie-parser')
   , bodyParser     = require('body-parser')
   , methodOverride = require('method-override')
@@ -85,7 +85,32 @@ app.set('app config by name', cfg)
 
 // uncomment after placing your favicon in /public
 app.use(favicon(path.join(__dirname, 'static', 'img', 'favicon.ico')))
-app.use(logger('dev'))
+
+function pad2(n) {
+  var len = (''+n).length
+  if ((''+n).length == 1)
+    return '0'+n
+  return n
+}
+function pad3(n) {
+  var len = (''+n).length
+  if (len == 1)
+    return '00'+n
+  if (len == 2)
+    return '0'+n
+  return n
+}
+morgan.token('time', function(req,res) {
+  var d = new Date()
+  return pad2(d.getHours())+':'+pad2(d.getMinutes())+':'+pad2(d.getSeconds())
+       +'.'+pad3(d.getMilliseconds())
+})
+// morgan logs on request
+app.use(morgan('[:time] :method :url - ":referrer" ":user-agent"'
+       , { immediate : true }))
+// morgan logs on response
+app.use(morgan('[:time] :method :url :status :response-time ms - :res[content-length]'))
+
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(cookieParser())
