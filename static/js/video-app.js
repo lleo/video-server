@@ -44,24 +44,24 @@
       var videoContent = videoContents.contents[0] //could be undefined
 
       $(window).on('popstate', function onPopState(e) {
-        info('VideoApp: onPopState: e = %o', e)
+        info() && console.log('VideoApp: onPopState: e = %o', e)
 
         var oldState = e.originalEvent.state
         var curState = self.getState()
-        info('VideoContent: onPopState: oldState = %o', oldState)
-        info('VideoContent: onPopState: curState = %o', curState)
+        info() && console.log('VideoContent: onPopState: oldState = %o', oldState)
+        info() && console.log('VideoContent: onPopState: curState = %o', curState)
 
         var otime = oldState.time
         if (typeof otime == 'string') {
-          info('VideoContent: onPopState: otime is a string %o', otime)
+          info() && console.log('VideoContent: onPopState: otime is a string %o', otime)
           otime = parseFloat(otime)
-          info('VideoContent: onPopState: otime = %f', otime)
+          info() && console.log('VideoContent: onPopState: otime = %f', otime)
         }
 
         var ctime = curState && curState.time
 
         if ( stateEqualExceptTime(oldState, curState)) {
-          info('VideoContent: onPopState: oldState & curState (minus time) are the same')
+          info() && console.log('VideoContent: onPopState: oldState & curState (minus time) are the same')
           videoContents.setPosition(otime)
         }
         else {
@@ -82,6 +82,7 @@
   /*
    * Logging system. It BLOWS hard, but it used to SUCK worse.
    */
+  //var log = console.log
   var logLevel = 0 //default setting
   var logLevels = ['info', 'warn', 'crit', 'none', 'error']
   VideoApp.getLogLevel = function VideoApp_getLogLevel(level) {
@@ -96,42 +97,24 @@
   VideoApp.setLogLevel = function VideoApp_setLogLevel(level) {
     return logLevel = VideoApp.getLogLevel(level)
   }
-  var _slice   = Array.prototype.slice
   var info_lvl = VideoApp.getLogLevel('info')
   var info = VideoApp.info = function info() {
-    var args
-    if (info_lvl >= VideoApp.getLogLevel()) {
-      args = _slice.apply(arguments)
-      if (args.length == 0) args.push('')
-      args[0] = '[INFO] '+args[0]
-      console.log.apply(console, args)
-    }
+    if (info_lvl >= logLevel) return true
+    return false
   }
   var warn_lvl = VideoApp.getLogLevel('warn')
   var warn = VideoApp.warn = function warn() {
-    var args
-    if (warn_lvl >= VideoApp.getLogLevel()) {
-      args = _slice.apply(arguments)
-      if (args.length == 0) args.push('')
-      args[0] = '[WARN] '+args[0]
-      console.log.apply(console, args)
-    }
+    if (warn_lvl >= logLevel) return true
+    return false
   }
   var crit_lvl = VideoApp.getLogLevel('crit')
   var crit = VideoApp.crit = function crit() {
-    var args
-    if (crit_lvl >= VideoApp.getLogLevel()) {
-      args = _slice.apply(arguments)
-      if (args.length == 0) args.push('')
-      args[0] = '[CRIT] '+args[0]
-      console.log.apply(console, args)
-    }
+    if (crit_lvl >= logLevel) return true
+    return false
   }
   var error = VideoApp.error = function error() {
-    var args = _slice.apply(arguments)
-    if (args.length == 0) args.push('')
-    args[0] = '[ERROR] '+args[0]
-    console.error.apply(console, args)
+    //don't even know if this is necessary
+    return true
   }
   
   {
@@ -239,7 +222,7 @@
       var self = this
 
       function onKeyPress(e) {
-        info('onKeyPress: called e =', e)
+        info() && console.log('onKeyPress: called e =', e)
         var videoControls = self.videoApp.videoControls
         var videoContents = self.videoApp.videoContents
 
@@ -284,32 +267,32 @@
         switch (character) {
          case 'p':
          case ' ':
-          info("onKeyPress: '%s' pressed; $play.click()", character)
+          info() && console.log("onKeyPress: '%s' pressed; $play.click()", character)
           videoControls.$play.click()
           break;
 
          case 's':
-          info("onKeyPress: 's' pressed; $skip.click()")
+          info() && console.log("onKeyPress: 's' pressed; $skip.click()")
           videoControls.$skip.click()
           break;
 
          case 'S':
-          info("onKeyPress: 'S' pressed; long skip")
+          info() && console.log("onKeyPress: 'S' pressed; long skip")
           videoContents.seek( videoControls.skipForwSecs * 3 )
           break;
 
          case 'b':
-          info("onKeyPress: 's' pressed; $back.click()")
+          info() && console.log("onKeyPress: 's' pressed; $back.click()")
           videoControls.$back.click()
           break;
 
          case 'B':
-          info("onKeyPress: 'B' pressed; long back")
+          info() && console.log("onKeyPress: 'B' pressed; long back")
           videoContents.seek( -(videoControls.skipBackSecs * 3) )
           break;
 
          case 'F':
-          info("onKeyPress: 'F' pressed; $fullscreen.click()")
+          info() && console.log("onKeyPress: 'F' pressed; $fullscreen.click()")
           videoControls.$fullscreen.click()
           break;
 
@@ -319,7 +302,7 @@
               + "e.charCode="+e.charCode+" "
               + "e.keyCode="+e.keyCode+" "
               + "char="+character
-          info(msg)
+          info() && console.log(msg)
           //alert(msg)
         }
       }
@@ -346,7 +329,7 @@
       var self = this
 
       function onMouseMove() {
-        //info('onMouseMove: called')
+        //info() && console.log('onMouseMove: called')
         // The algorithm is as follows:
         // 0 - turn off the on 'mousemove' event handler
         //   - show controls & cursor & start throttling the 'mousemove' events
@@ -409,10 +392,10 @@
       // This was a test to see if there was any jQuery or Browser trottleing
       // of 'mousemove' events.
       //function onMouseMove(e) { //[test]
-      //  info('onMouseMove: overControls = %o', overControls)
+      //  info() && console.log('onMouseMove: overControls = %o', overControls)
       //
       //  function hideBothTimerFn() {
-      //    info('hideBothTimerFn: overControls = %o', overControls)
+      //    info() && console.log('hideBothTimerFn: overControls = %o', overControls)
       //    hideBothTimerId = undefined
       //    if (!overControls) {
       //      if ( !self.videoApp.videoControls.$dom.hasClass('hide') ) {
@@ -453,7 +436,7 @@
     } //end: VideoContents___setupMouseEvents()
 
   VideoContents.prototype.startBusy = function VideoContents__startBusy() {
-    info('VideoContents__startBusy:')
+    info() && console.log('VideoContents__startBusy:')
     
     if (this.contents.length) {
       this.contents[0].startBusy()
@@ -461,7 +444,7 @@
   }
 
   VideoContents.prototype.stopBusy = function VideoContents__stopBusy() {
-    info('VideoContents__stopBusy:')
+    info() && console.log('VideoContents__stopBusy:')
     
     if (this.contents.length) {
       this.contents[0].stopBusy()
@@ -607,7 +590,7 @@
   } //end: VideoContents__setMark()
 
   function VideoContent(vidNum, root, subdirs, file, initTime, videoApp) {
-    info('VideoContent() constructor')
+    info() && console.log('VideoContent() constructor')
 
     this.vidNum   = vidNum
     this.root     = root
@@ -715,7 +698,7 @@
   //    var self = this
   //
   //    function onKeyPress(e) {
-  //      info('onKeyPress: called e =', e)
+  //      info() && console.log('onKeyPress: called e =', e)
   //      var videoControls = self.videoApp.videoControls
   //      var videoContents = self.videoApp.videoContents
   //
@@ -760,32 +743,32 @@
   //      switch (character) {
   //       case 'p':
   //       case ' ':
-  //        info("onKeyPress: '%s' pressed; $play.click()", character)
+  //        info() && console.log("onKeyPress: '%s' pressed; $play.click()", character)
   //        videoControls.$play.click()
   //        break;
   //
   //       case 's':
-  //        info("onKeyPress: 's' pressed; $skip.click()")
+  //        info() && console.log("onKeyPress: 's' pressed; $skip.click()")
   //        videoControls.$skip.click()
   //        break;
   //
   //       case 'S':
-  //        info("onKeyPress: 'S' pressed; long skip")
+  //        info() && console.log("onKeyPress: 'S' pressed; long skip")
   //        videoContents.seek( videoControls.skipForwSecs * 3 )
   //        break;
   //
   //       case 'b':
-  //        info("onKeyPress: 's' pressed; $back.click()")
+  //        info() && console.log("onKeyPress: 's' pressed; $back.click()")
   //        videoControls.$back.click()
   //        break;
   //
   //       case 'B':
-  //        info("onKeyPress: 'B' pressed; long back")
+  //        info() && console.log("onKeyPress: 'B' pressed; long back")
   //        videoContents.seek( -(videoControls.skipBackSecs * 3) )
   //        break;
   //
   //       case 'F':
-  //        info("onKeyPress: 'F' pressed; $fullscreen.click()")
+  //        info() && console.log("onKeyPress: 'F' pressed; $fullscreen.click()")
   //        videoControls.$fullscreen.click()
   //        break;
   //
@@ -795,7 +778,7 @@
   //            + "e.charCode="+e.charCode+" "
   //            + "e.keyCode="+e.keyCode+" "
   //            + "char="+character
-  //        info(msg)
+  //        info() && console.log(msg)
   //        //alert(msg)
   //      }
   //    }
@@ -815,7 +798,7 @@
   //    var self = this
   //
   //    function onMouseMove() {
-  //      //info('onMouseMove: called')
+  //      //info() && console.log('onMouseMove: called')
   //      // The algorithm is as follows:
   //      // 0 - turn off the on 'mousemove' event handler
   //      //   - show controls & cursor & start throttling the 'mousemove' events
@@ -879,10 +862,10 @@
   //    // This was a test to see if there was any jQuery or Browser trottleing
   //    // of 'mousemove' events.
   //    //function onMouseMove(e) { //[test]
-  //    //  info('onMouseMove: overControls = %o', overControls)
+  //    //  info() && console.log('onMouseMove: overControls = %o', overControls)
   //    //
   //    //  function hideBothTimerFn() {
-  //    //    info('hideBothTimerFn: overControls = %o', overControls)
+  //    //    info() && console.log('hideBothTimerFn: overControls = %o', overControls)
   //    //    hideBothTimerId = undefined
   //    //    if (!overControls) {
   //    //      if ( !self.videoApp.videoControls.$dom.hasClass('hide') ) {
@@ -942,20 +925,20 @@
       var self = this
 
       //$(window).on('popstate', function onPopState(e) {
-      //  info('VideoContent: onPopState: e = %o', e)
+      //  info() && console.log('VideoContent: onPopState: e = %o', e)
       //  var oldState = e.originalEvent.state
       //  var curState = _.cloneDeep(self.state)
-      //  info('VideoContent: onPopState: oldState = %o', oldState)
-      //  info('VideoContent: onPopState: curState = %o', curState)
+      //  info() && console.log('VideoContent: onPopState: oldState = %o', oldState)
+      //  info() && console.log('VideoContent: onPopState: curState = %o', curState)
       //  var otime = oldState.time
       //  if (typeof otime == 'string') {
-      //    info('VideoContent: onPopState: otime is a string %o', otime)
+      //    info() && console.log('VideoContent: onPopState: otime is a string %o', otime)
       //    otime = parseFloat(otime)
-      //    info('VideoContent: onPopState: otime = %f', otime)
+      //    info() && console.log('VideoContent: onPopState: otime = %f', otime)
       //  }
       //  var ctime = curState.time
       //  if ( stateEqualExceptTime(oldState, curState)) {
-      //    info('VideoContent: onPopState: oldState & curState (minus time) are the same')
+      //    info() && console.log('VideoContent: onPopState: oldState & curState (minus time) are the same')
       //    self.setPosition(otime)
       //  }
       //  else {
@@ -967,7 +950,7 @@
       //})
 
       $video.on('loadeddata', function onLoadedData(e) {
-        info("onLoadedData: e.target.id=%s", e.target.id)
+        info() && console.log("onLoadedData: e.target.id=%s", e.target.id)
         // 'loadeddata' means that the HTMLMediaElement has loaded enough
         // data to display one frame.
         //
@@ -981,10 +964,10 @@
         self.videoWidth  = self.$video[0].videoWidth
         self.videoHeight = self.$video[0].videoHeight
 
-        info("onLoadedData: width=%f; height=%f;"
+        info() && console.log("onLoadedData: width=%f; height=%f;"
             , self.videoWidth, self.videoHeight)
 
-        info('onLoadedData: self.$video[0].duration = %f', self.$video[0].duration)
+        info() && console.log('onLoadedData: self.$video[0].duration = %f', self.$video[0].duration)
         var videoControls = self.videoApp.videoControls
 
         if (0 == self.vidNum) {
@@ -1011,39 +994,39 @@
 
       $video.on('canplay', function onCanPlay(e) {
         self.canPlay = self.$video[0].readyState === HTMLMediaElement.HAVE_ENOUGH_DATA
-        info("onCanPlay: %s.readyState = %s(%o); "
-            + "set self<VideoContent>.canPlay = %o"
-            , self.$video[0].id
-            , MEC[self.$video[0].readyState]
-            , self.$video[0].readyState
-            , self.canPlay)
+        info() && console.log("onCanPlay: %s.readyState = %s(%o); "
+                             + "set self<VideoContent>.canPlay = %o"
+                             , self.$video[0].id
+                             , MEC[self.$video[0].readyState]
+                             , self.$video[0].readyState
+                             , self.canPlay)
 
         var videoControls = self.videoApp.videoControls
-        videoControls.enable()
+        if ( !videoControls.isEnabled() ) videoControls.enable()
         videoControls.cssPositionControls()
         self.cssCenterSpinner()
       })
       
       $video.on('playing', function onPlaying(e){
-        info("onPlaying: e.target.id=%s", e.target.id)
+        info() && console.log("onPlaying: e.target.id=%s", e.target.id)
       })
 
       $video.on('pause', function onPauseMisc(e){
-        info("onPlayMisc: e.target.id=%s", e.target.id)
+        info() && console.log("onPlayMisc: e.target.id=%s", e.target.id)
         //do something ...maybe
       })
 
       $video.on('seeked', function onSeeked(e) {
         // display seeked frame when currentTime is manually changed
         //
-        info('onSeeked: calling self<VideoContent>.stopBusy()')
+        info() && console.log('onSeeked: calling self<VideoContent>.stopBusy()')
 
         self.stopBusy()
       })
       
       $video.on('seeking', function onSeeking(e){
-        info("onSeeking: e.target.id=%s", e.target.id)
-        info('onSeeking: calling self<VideoContent>.startBusy()')
+        info() && console.log("onSeeking: e.target.id=%s", e.target.id)
+        info() && console.log('onSeeking: calling self<VideoContent>.startBusy()')
 
         self.startBusy()
       })
@@ -1055,7 +1038,7 @@
       })
 
       $video.on('ended', function onEnded(e){
-        info("onEnded: e.target.id=%s", e.target.id)
+        info() && console.log("onEnded: e.target.id=%s", e.target.id)
 
 
         //var $play = self.videoApp.videoControls.$play
@@ -1068,9 +1051,9 @@
       })
 
       function onFullscreenChange(e) {
-        info('onFullscreenChange: e = %o', e)
+        info() && console.log('onFullscreenChange: e = %o', e)
         var event = e.originalEvent.type
-        warn('onFullscreenChange: caused by %o', event)
+        warn() && console.log('onFullscreenChange: caused by %o', event)
         self.fullscreenChanged(e)
       }
       $(document).on('webkitfullscreenchange '
@@ -1082,7 +1065,7 @@
     } //end: VideoContent__setupVideo()
 
   VideoContent.prototype.startBusy = function VideoContent__startBusy() {
-    info('VideoContent__startBusy:')
+    info() && console.log('VideoContent__startBusy:')
     var videoControls = this.videoApp.videoControls
 
     if (0 == this.vidNum) {
@@ -1092,14 +1075,14 @@
 
     //remove the hide class from the $spinner
     if ( this.$spinner.hasClass('hide') ) {
-      info('VideoContent__startBusy: $spinner has "hide" class')
-      info('VideoContent__startBusy: removing "hide" class to $spinner')
+      info() && console.log('VideoContent__startBusy: $spinner has "hide" class')
+      info() && console.log('VideoContent__startBusy: removing "hide" class to $spinner')
       this.$spinner.removeClass('hide')
     }
   }
 
   VideoContent.prototype.stopBusy = function VideoContent__stopBusy() {
-    info('VideoContent__stopBusy:')
+    info() && console.log('VideoContent__stopBusy:')
     var videoControls = this.videoApp.videoControls
 
     if (0 == this.vidNum) {
@@ -1109,8 +1092,8 @@
 
     //add the hide class from the $spinner
     if ( !this.$spinner.hasClass('hide') ) {
-      info('VideoContent_stopBusy: $spinner does not have "hide" class')
-      info('VideoContent__stopBusy: adding "hide" class to $spinner')
+      info() && console.log('VideoContent_stopBusy: $spinner does not have "hide" class')
+      info() && console.log('VideoContent__stopBusy: adding "hide" class to $spinner')
       this.$spinner.addClass('hide')
     }
   }
@@ -1179,7 +1162,7 @@
 
   VideoContent.prototype.setPosition =
     function VideoContent__setPosition(fsecs) {
-      info('VideoContent__setPosition: fsecs = %f', fsecs)
+      info() && console.log('VideoContent__setPosition: fsecs = %f', fsecs)
 
       this.$video[0].currentTime = fsecs
 
@@ -1187,7 +1170,7 @@
     }
 
   VideoContent.prototype.seek = function VideoContent__seek(nsecs) {
-    info('VideoContent__seek: nsecs = %d', nsecs)
+    info() && console.log('VideoContent__seek: nsecs = %d', nsecs)
     var newTime = this.$video[0].currentTime + nsecs
     this.setPosition(newTime)
     return true
@@ -1221,23 +1204,23 @@
         //var el = this.$video[0]
         var el = this.$dom[0]
         if (el.requestFullscreen) {
-          info('VideoContent__toggleFullscreen: used requestFullscreen')
+          info() && console.log('VideoContent__toggleFullscreen: used requestFullscreen')
           el.requestFullscreen()
         }
         else if (el.msRequestFullscreen) {
-          info('VideoContent__toggleFullscreen: used msRequestFullscreen')
+          info() && console.log('VideoContent__toggleFullscreen: used msRequestFullscreen')
           el.msRequestFullscreen()
         }
         else if (el.mozRequestFullScreen) {
-          info('VideoContent__toggleFullscreen: used mozRequestFullScreen')
+          info() && console.log('VideoContent__toggleFullscreen: used mozRequestFullScreen')
           el.mozRequestFullScreen()
         }
         else if (el.webkitRequestFullscreen) {
-          info('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
+          info() && console.log('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
           el.webkitRequestFullscreen()
         }
         else {
-          warn('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
+          warn() && console.log('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
           alert("requestFullScreen not implemented by this browser")
           return
         }
@@ -1247,23 +1230,23 @@
       else {
         // try to cancel fullscreen
         if (document.cancelFullScreen) {
-          info('VideoContent__toggleFullscreen: used document.cancelFullScreen')
+          info() && console.log('VideoContent__toggleFullscreen: used document.cancelFullScreen')
           document.cancelFullScreen()
         }
         else if (document.msExitFullscreen) {
-          info('VideoContent__toggleFullscreen: used document.msExitFullscreen')
+          info() && console.log('VideoContent__toggleFullscreen: used document.msExitFullscreen')
           document.msExitFullscreen()
         }
         else if (document.mozCancelFullScreen) {
-          info('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
+          info() && console.log('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
           document.mozCancelFullScreen()
         }
         else if (document.webkitCancelFullScreen) {
-          info('VideoContent__toggleFullscreen: used document.webkitCancelFullScreen')
+          info() && console.log('VideoContent__toggleFullscreen: used document.webkitCancelFullScreen')
           document.webkitCancelFullScreen()
         }
         else {
-          warn('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
+          warn() && console.log('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
           alert('cancelFullScreen not implemented by this browser')
           return
         }
@@ -1352,15 +1335,15 @@
     this.onPlayClickFn = function onPlayClick(e) {
       var videoContents = self.videoApp.videoContents
       
-      info('onPlayClick: videoContents.isPaused() = %o', videoContents.isPaused())
+      info() && console.log('onPlayClick: videoContents.isPaused() = %o', videoContents.isPaused())
       if ( videoContents.isPaused() ) {
-        info('onPlayClick: calling videoContents.play()')
+        info() && console.log('onPlayClick: calling videoContents.play()')
         videoContents.play()
         self.$playSym.removeClass('fa-play')
         self.$playSym.addClass('fa-pause')
       }
       else {
-        info('onPlayClick: calling videoContents.pause()')
+        info() && console.log('onPlayClick: calling videoContents.pause()')
         videoContents.pause()
         self.$playSym.removeClass('fa-pause')
         self.$playSym.addClass('fa-play')
@@ -1384,7 +1367,7 @@
                  .append( this.$skipSym )
 
     this.onSkipClickFn = function onSkipClick(e) {
-      info('onSkipClick: seeking %d secs', self.skipForwSecs)
+      info() && console.log('onSkipClick: seeking %d secs', self.skipForwSecs)
       var videoContents = self.videoApp.videoContents
       videoContents.seek(self.skipForwSecs)
     }
@@ -1405,7 +1388,7 @@
                  .append( this.$backSym )
 
     this.onBackClickFn = function onBackClick(e) {
-      info('onBackClick: seeking %d secs', -self.skipBackSecs)
+      info() && console.log('onBackClick: seeking %d secs', -self.skipBackSecs)
       var videoContents = self.videoApp.videoContents
       videoContents.seek(-self.skipBackSecs)
     }
@@ -1421,8 +1404,8 @@
                         .attr('value', 0)
 
     this.onPositionNumInputFn = function onPositionNumInput(e) {
-      info('onPositionNumInput: e.target.valueAsNumber = %f'
-          , e.target.valueAsNumber)
+      info() && console.log('onPositionNumInput: e.target.valueAsNumber = %f'
+                   , e.target.valueAsNumber)
       var val = e.target.valueAsNumber
       self.setPosition(val)
       self.videoApp.videoContents.setPosition(val)
@@ -1436,8 +1419,8 @@
                         .attr('value', 0)
 
     this.onPositionRngInputFn = function onPositionRngInput(e) {
-      info('onPositionRngInput: e.target.valueAsNumber = %f'
-          , e.target.valueAsNumber)
+      info() && console.log('onPositionRngInput: e.target.valueAsNumber = %f'
+                   , e.target.valueAsNumber)
 
       var val = e.target.valueAsNumber
 
@@ -1479,10 +1462,10 @@
         return
       }
       
-      info('onVolumeSymClick: before volume = %f', videoEl.volume)
+      info() && console.log('onVolumeSymClick: before volume = %f', videoEl.volume)
       if (videoEl.muted) {
         videoEl.muted = false
-        info('onVolumeSymClick: muted after volume = %f', videoEl.volume)
+        info() && console.log('onVolumeSymClick: muted after volume = %f', videoEl.volume)
 
         if ( self.$volumeSym.hasClass('fa-volume-off') ) {
           self.$volumeSym.removeClass('fa-volume-off')
@@ -1498,7 +1481,7 @@
       }
       else { //volume on
         videoEl.muted = true
-        info('onVolumeSymClick: not muted after volume = %f', videoEl.volume)
+        info() && console.log('onVolumeSymClick: not muted after volume = %f', videoEl.volume)
 
         if ( self.$volumeSym.hasClass('fa-volume-down') ) {
           self.$volumeSym.removeClass('fa-volume-down')
@@ -1522,9 +1505,9 @@
                       .addClass('range')
 
     this.onVolumeRngInputFn = function onVolumeRngInput(e) {
-      info('onVolumeRngInput: e.target.valueAsNumber = %f', e.target.valueAsNumber)
+      info() && console.log('onVolumeRngInput: e.target.valueAsNumber = %f', e.target.valueAsNumber)
       var volume = e.target.valueAsNumber
-      info('onVolumeRngInput: volume = %d', volume)
+      info() && console.log('onVolumeRngInput: volume = %d', volume)
 
       var videoContents = self.videoApp.videoContents
 
@@ -1554,7 +1537,7 @@
                        .append( this.$fullscreenSym )
 
     this.onFullscreenClickFn = function onFullscreenClick(e) {
-      info('onFullscreenClick: called')
+      info() && console.log('onFullscreenClick: called')
 
       var videoContents = self.videoApp.videoContents
 
@@ -1578,7 +1561,7 @@
                  .append( this.$markSym )
 
     this.onMarkClickFn = function onMarkClick(e) {
-      info('onMarkClick: called')
+      info() && console.log('onMarkClick: called')
 
       var videoContent = self.videoApp.videoContents.contents[0]
       var root    = videoContent.root
@@ -1595,14 +1578,14 @@
 
       var url = window.location.origin + window.location.pathname + "?" + qstr
 
-      info('onMarkClick: window.location.origin = %s', window.location.origin)
-      info('onMarkClick: window.location.pathname = %s', window.location.pathname)
-      info('onMarkClick: q = %o', q)
-      info('onMarkClick: qstr = %s', qstr)
-      info('onMarkClick: url = %s', url)
+      info() && console.log('onMarkClick: window.location.origin = %s', window.location.origin)
+      info() && console.log('onMarkClick: window.location.pathname = %s', window.location.pathname)
+      info() && console.log('onMarkClick: q = %o', q)
+      info() && console.log('onMarkClick: qstr = %s', qstr)
+      info() && console.log('onMarkClick: url = %s', url)
 
       var state = _.cloneDeep(videoContent.state)
-      info('onMarkClick: state = %o', state)
+      info() && console.log('onMarkClick: state = %o', state)
 
       history.pushState(state, null, url)
     }
@@ -1684,8 +1667,9 @@
   }
   
   VideoControls.prototype.enable = function VideoControls__enable() {
+    info() && console.log('VideoControls__enable: this._enabled = %o', this._enabled)
     if ( this.isEnabled() ) {
-      warn('VideoControls__enable: controls already enabled!')
+      warn() && console.log('VideoControls__enable: controls already enabled!')
       console.trace()
       return
     }
@@ -1715,8 +1699,9 @@
   } //end: VideoControls__enable()
 
   VideoControls.prototype.disable = function VideoControls__disable() {
-    if (!this.isEnabled) {
-      warn('VideoControls__disable: controls already disabled')
+    info() && console.log('VideoControls__disable: this._enabled = %o', this._enabled)
+    if ( !this.isEnabled() ) {
+      warn() && console.log('VideoControls__disable: controls already disabled')
       console.trace()
       return
     }
@@ -1746,7 +1731,7 @@
     'use strict';
     if (pct < 0) pct = 0
     if (pct > 100) pct = 100
-    info('VideoContents__setVolume: pct = %d', pct)
+    info() && console.log('VideoContents__setVolume: pct = %d', pct)
 
     var allVolumeSet = true
     for (var i=0; i<this.contents.length; i+=1) {
@@ -1803,7 +1788,7 @@
       var i
       var dirSelect
 
-      info('FileBrowser: selectChanged: val = '+JSON.stringify(val))
+      info() && console.log('FileBrowser: selectChanged: val = '+JSON.stringify(val))
 
       self.selectedRoot = val
       
@@ -1823,7 +1808,7 @@
       }
 
       function readdirSuccess(data) {
-        info('FileBrowser: selectChanged: readdirSuccess: data =', data)
+        info() && console.log('FileBrowser: selectChanged: readdirSuccess: data =', data)
         self.addDirSelect(data.dirs, data.files)
       }
 
@@ -1864,7 +1849,7 @@
 
       var self = this
       function onKeyDown(e) {
-        info("FileBrowser: onKeyDown: called %o", e)
+        info() && console.log("FileBrowser: onKeyDown: called %o", e)
         if (e.originalEvent.repeat) return
 
         var left  = 37
@@ -1875,11 +1860,11 @@
         // only concerned with left and right
         switch (e.keyCode) {
          case left:
-          info("fileBrowser.$rootSelect: onKeyDown: left goes no where.")
+          info() && console.log("fileBrowser.$rootSelect: onKeyDown: left goes no where.")
           break;
 
          case right:
-          info("fileBrowser.$rootSelect: onKeyDown: right should focus right")
+          info() && console.log("fileBrowser.$rootSelect: onKeyDown: right should focus right")
           e.stopImmediatePropagation()
           self.focusNext()
           break;
@@ -1896,7 +1881,7 @@
 
   FileBrowser.prototype.focusNext = function FileBroswer__focusNext() {
     if (this.dirSelects.length < 1) {
-      info("FileBroswer__focusNext: this.dirSelects.length = %d", this.dirSelects.length)
+      info() && console.log("FileBroswer__focusNext: this.dirSelects.length = %d", this.dirSelects.length)
       return
     }
     this.dirSelects[0].$select.focus()
@@ -1904,8 +1889,8 @@
 
   FileBrowser.prototype.addDirSelect =
     function FileBrowser__addDirSelect(dirs, files) {
-      info('FileBrowser__addDirSelect: dirs =', dirs)
-      info('FileBrowser__addDirSelect: files =', files)
+      info() && console.log('FileBrowser__addDirSelect: dirs =', dirs)
+      info() && console.log('FileBrowser__addDirSelect: files =', files)
 
       var nextNum = this.dirSelects.length
 
@@ -1925,7 +1910,7 @@
         var val = $(this).val()
         var i
 
-        info('FileBrowser: selectChanged: val = '+JSON.stringify(val))
+        info() && console.log('FileBrowser: selectChanged: val = '+JSON.stringify(val))
 
         //if the captured number of DirSelects < the current number of DirSelects
         if (numDirSelects < self.dirSelects.length) {
@@ -1948,7 +1933,7 @@
           self.subdirs.push(val)
 
           function readdirSuccess(data) {
-            info('FileBrowser__addDirSelect: disSelectChanged: readdirSuccess; data = ', data)
+            info() && console.log('FileBrowser__addDirSelect: disSelectChanged: readdirSuccess; data = ', data)
             self.addDirSelect(data.dirs, data.files)
           }
 
@@ -1980,12 +1965,12 @@
 
   FileBrowser.prototype.fileSelected =
     function FileBrowser__fileSelected(file) {
-      info('FileBrowser__fileSelected: fqfn:'
-          + '"' + this.selectedRoot + '"/'
-          + this.subdirs.join('/')
-          + '/'
-          + file
-          )
+      info() && console.log('FileBrowser__fileSelected: fqfn:'
+                           + '"' + this.selectedRoot + '"/'
+                           + this.subdirs.join('/')
+                           + '/'
+                           + file
+                           )
       var root = this.selectedRoot
       var subdirs = _.clone(this.subdirs)
       
@@ -2106,19 +2091,19 @@
         // only concerned with left and right
         switch (e.keyCode) {
          case left:
-          info("dirSelect[%d].$select: onKeyDown: left should focus left", self.dirNum)
+          info() && console.log("dirSelect[%d].$select: onKeyDown: left should focus left", self.dirNum)
           e.stopImmediatePropagation()
           self.focusPrev()
           break;
 
          case right:
-          info("fileBrowser.$rootSelect: onKeyDown: right should focus right")
+          info() && console.log("fileBrowser.$rootSelect: onKeyDown: right should focus right")
           e.stopImmediatePropagation()
           self.focusNext()
           break;
 
          default:
-          info("dirSelect[%d].$select: onKeyDown: unknown keyCode=%d"
+          info() && console.log("dirSelect[%d].$select: onKeyDown: unknown keyCode=%d"
               , self.dirNum, e.keyCode)
         }
 
