@@ -194,7 +194,8 @@
       while (this.contents.length) {
         this.contents.pop().$dom.remove()
       }
-      this._resetMouseState()
+//      this._resetMouseState()
+
       var videoControls = this.videoApp.videoControls
       videoControls.reset()
 
