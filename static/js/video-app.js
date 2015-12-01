@@ -158,11 +158,16 @@
     this.videoApp = videoApp
     this.initialLoad = _.cloneDeep(initialLoad)
     this.contents = []
+    this._mouseState = { hideBothTimerId : undefined
+                       , firstThrottleTimerExecuted : true
+                       , overControls : false
+                       }
     this.id = 'videoContents'
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.id)
-                .addClass('videoContents')
+                //.addClass('videoContents')
                 .addClass('nocursor')
+                .append( videoApp.videoControls.$dom )
 
     this.contents = [] //array of VideoContent objects
     this._isFullscreen = false
@@ -206,8 +211,8 @@
       while (this.contents.length) {
         this.contents.pop().$dom.remove()
       }
+      this._resetMouseState()
       var videoControls = this.videoApp.videoControls
-      videoControls.disable()
       videoControls.reset()
 
       var vidNum = this.contents.length
@@ -323,14 +328,21 @@
       $(document).on('keypress', onKeyPress)
     } //end: VideoContents___setupKeyboardEvents()
 
+  VideoContents.prototype._resetMouseState =
+    function VideoContents___resetMouseState() {
+      var ms = this._mouseState
+      if (ms.hideBothTimerId) clearTimeout(ms.hideBothTimerId)
+      ms.hideBothTimerId = undefined
+      ms.firstThrottleTimerExecuted = true
+      ms.overControls = false
+    }
+
   VideoContents.prototype._setupMouseEvents =
     function VideoContents___setupMouseEvents() {
+      console.log('VideoContents___setupMouseEvents: this._eventsSetup = %o', this._eventsSetup)
       if (this._eventsSetup) return
 
-      var hideBothTimerId
-        , firstThrottleTimerExecuted = true
-        , overControls = false
-
+      var ms = this._mouseState
       var self = this
 
       function onMouseMove() {
@@ -350,15 +362,15 @@
           // NOTE: The variable overControls is a boolean that is set true
           // by the 'mouseenter' and false by the 'mouseleave' events
           // See the onMouse{Enter,Leave} functions declared below.
-          if (!overControls && !videoControls.$dom.hasClass('hide'))
+          if (!ms.overControls && !videoControls.$dom.hasClass('hide'))
             videoControls.$dom.addClass('hide')
 
-          if (!overControls && !self.$dom.hasClass('nocursor'))
+          if (!ms.overControls && !self.$dom.hasClass('nocursor'))
             self.$dom.addClass('nocursor')
 
           // reset the firstThrottleTimerExecuted & hideBothTimerId
-          firstThrottleTimerExecuted = true
-          hideBothTimerId = undefined
+          ms.firstThrottleTimerExecuted = true
+          ms.hideBothTimerId = undefined
         }
 
         // This is the second part of the throttle algorithm.
@@ -368,13 +380,12 @@
         //   events back on. So for 50ms the 'mousemove' events were ignored.
         function throttleTimerFn() {
           self.$dom.on('mousemove', onMouseMove)
-
           // IF the the hideBothTimerFn has already been set
           // OR this is the first in a sequence of 'mousemove' events
-          if (hideBothTimerId || firstThrottleTimerExecuted) {
-            clearTimeout(hideBothTimerId)
-            firstThrottleTimerExecuted = false
-            hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
+          if (ms.hideBothTimerId || ms.firstThrottleTimerExecuted) {
+            clearTimeout(ms.hideBothTimerId)
+            ms.firstThrottleTimerExecuted = false
+            ms.hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
           }
         }
 
@@ -431,14 +442,11 @@
       this.$dom.on('mousemove', onMouseMove)
 
       function onMouseEnter(e) {
-        overControls = true
+        ms.overControls = true
       }
       function onMouseLeave(e) {
-        overControls = false
+        ms.overControls = false
       }
-      console.log('VideoContents___setupMouseEvents: this = %o', this)
-      console.log('VideoContents___setupMouseEvents: this.videoApp = %o', this.videoApp)
-      console.log('VideoContents___setupMouseEvents: this.videoApp.videoControls = %o', this.videoApp.videoControls)
       this.videoApp.videoControls.$dom.on('mouseenter', onMouseEnter)
       this.videoApp.videoControls.$dom.on('mouseleave', onMouseLeave)
 
@@ -651,19 +659,11 @@
 
     var $video = $( document.createElement('video') )
                  .attr('id', this.ids.video )
-                 //.attr('controls', true)
+                 .attr('controls', false)
                  .addClass('videoDisplay')
                  .append($source)
 
     this.$video = $video
-
-    //FIXME: delete this
-    //var $display = $( document.createElement('div') )
-    //               .attr('id', this.ids.display)
-    //               .addClass('videoDisplay')
-    //               .append( this.$video )
-    //
-    //this.$display = $display
 
     var $spinnerSym = $( document.createElement('i') )
                       .attr('id', this.ids.spinnerSym)
@@ -690,7 +690,7 @@
 
     if (0 == vidNum) {
       this.$dom.append( this.$spinner )
-      this.$dom.append( videoApp.videoControls.$dom )
+      //this.$dom.append( videoApp.videoControls.$dom )
     }
 
     this._setupEvents()
@@ -986,10 +986,11 @@
 
         info('onLoadedData: self.$video[0].duration = %f', self.$video[0].duration)
         var videoControls = self.videoApp.videoControls
-        var videoContents = self.videoApp.videoContents
 
-        if (0 == self.vidNum)
+        if (0 == self.vidNum) {
+          //if ( !videoControls.isEnabled() ) videoControls.enable()
           videoControls.$positionRng[0].max = self.$video[0].duration
+        }
 
         if (self.initTime) {
           console.log('onLoadedData: self.initTime = %f', self.initTime)
@@ -1623,7 +1624,7 @@
       videoContents = this.videoApp.videoContents
       if ( videoContents.contents.length ) {
         //grab the first $dom where the controls are under
-        $dom = videoContents.contents[0].$dom
+        $dom = videoContents.$dom
         $controls = $('#videoControls')
         offset = ($dom.width()/2) - ($controls.width()/2)
         $controls.css({top: 10, left: offset})
@@ -1668,7 +1669,7 @@
   }
   
   VideoControls.prototype.reset = function VideoControls__reset() {
-    this.disable()
+    if ( this.isEnabled() ) this.disable()
     if (this.$playSym.hasClass('fa-pause')) {
       this.$playSym.removeClass('fa-pause')
       this.$playSym.addClass('fa-play')
@@ -1683,53 +1684,63 @@
   }
   
   VideoControls.prototype.enable = function VideoControls__enable() {
-    if (!this.isEnabled()) {
-      if ( this.$dom.hasClass('disabled') ) {
-        this.$dom.removeClass('disabled')
-      }
-      else {
-        error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
-        //return;
-      }
-
-      if ( !this.$dom.hasClass('enabled') ) this.$dom.addClass('enabled')
-
-      this.$play.on('click', this.onPlayClickFn)
-      this.$skip.on('click', this.onSkipClickFn)
-      this.$back.on('click', this.onBackClickFn)
-      this.$positionNum.on('input', this.onPositionNumInputFn)
-      this.$positionRng.on('input', this.onPositionRngInputFn)
-      this.$volumeSymDiv.on('click', this.onVolumeSymClickFn)
-      this.$volumeRng.on('input', this.onVolumeRngInputFn)
-      this.$fullscreen.on('click', this.onFullscreenClickFn)
-      this.$mark.on('click', this.onMarkClickFn)
-
-      return this._enabled = true
+    if ( this.isEnabled() ) {
+      warn('VideoControls__enable: controls already enabled!')
+      console.trace()
+      return
     }
-  }
+
+    if ( this.$dom.hasClass('disabled') ) {
+      this.$dom.removeClass('disabled')
+    }
+    else {
+      error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
+      console.trace()
+      //return;
+    }
+
+    if ( !this.$dom.hasClass('enabled') ) this.$dom.addClass('enabled')
+
+    this.$play.on('click', this.onPlayClickFn)
+    this.$skip.on('click', this.onSkipClickFn)
+    this.$back.on('click', this.onBackClickFn)
+    this.$positionNum.on('input', this.onPositionNumInputFn)
+    this.$positionRng.on('input', this.onPositionRngInputFn)
+    this.$volumeSymDiv.on('click', this.onVolumeSymClickFn)
+    this.$volumeRng.on('input', this.onVolumeRngInputFn)
+    this.$fullscreen.on('click', this.onFullscreenClickFn)
+    this.$mark.on('click', this.onMarkClickFn)
+
+    return this._enabled = true
+  } //end: VideoControls__enable()
 
   VideoControls.prototype.disable = function VideoControls__disable() {
-    if (this.isEnabled()) {
-      if ( this.$dom.hasClass('enabled') ) {
-        this.$dom.removeClass('enabled')
-      }
-      else {
-        error('WTF!!! VideoControls__disable: this.isEnabled() && !this.$dom.hasClass("enabled")')
-        //return
-      }
-
-      if ( !this.$dom.hasClass('disabled') ) this.$dom.addClass('disabled')
-
-      this.$play.off('click', this.onPlayClickFn)
-      this.$skip.off('click', this.onSkipClickFn)
-      this.$back.off('click', this.onBackClickFn)
-      this.$fullscreen.off('click', this.onFullscreenClickFn)
-      this.$volumeSym.off('click', this.onVolumeSymClickFn)
-      this.$mark.off('click', this.onMarkClickFn)
-
-      this._enabled = false
+    if (!this.isEnabled) {
+      warn('VideoControls__disable: controls already disabled')
+      console.trace()
+      return
     }
-  }
+
+    if ( this.$dom.hasClass('enabled') ) {
+      this.$dom.removeClass('enabled')
+    }
+    else {
+      error('WTF!!! VideoControls__disable: this.isEnabled() && !this.$dom.hasClass("enabled")')
+      console.trace()
+      //return
+    }
+
+    if ( !this.$dom.hasClass('disabled') ) this.$dom.addClass('disabled')
+
+    this.$play.off('click', this.onPlayClickFn)
+    this.$skip.off('click', this.onSkipClickFn)
+    this.$back.off('click', this.onBackClickFn)
+    this.$fullscreen.off('click', this.onFullscreenClickFn)
+    this.$volumeSym.off('click', this.onVolumeSymClickFn)
+    this.$mark.off('click', this.onMarkClickFn)
+
+    this._enabled = false
+  } //end: VideoControls__disable()
 
   VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
     'use strict';
