@@ -38,7 +38,7 @@ module.exports = function(req, res, next){
                * 'none' is a place holder for no logging except error
                * There is really only three optional levels info, warn, and crit.
                */
-            , 'debug'            : 'info'
+            , 'debug'            : 'warn'
             }
 
   console.log('index: cfg["video root names"] =', cfg['video root names'])
