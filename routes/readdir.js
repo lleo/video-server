@@ -12,6 +12,8 @@ var u = require('lodash')
 
 Promise.promisifyAll(fs)
 
+const MODNAME = path.parse(module.filename).name
+
 /* filterFilesByExt
  * 
  * files: array of strings; filenames with or without an extension
@@ -20,45 +22,79 @@ Promise.promisifyAll(fs)
  */
 function filterFilesByExt(files, exts) {
   'use strict';
-  console.log("readdir: filterFilesByExt: exts = %j", exts)
+  console.log("%s: filterFilesByExt: exts = %j", MODNAME, exts)
   return files.filter(function(fn) {
-    for (let ext of exts)
-      if (path.extname(fn).substr(1) == ext)
+    for (let ext of exts) {
+      // test the file's extension name (minus the leading '.')
+      if (path.extname(fn).substr(1) == ext) {
         return true
+      }
+      return false
+    }
   })
 }
 
-module.exports = function (req, res) {
+module.exports = function readdir(req, res, next) {
   'use strict';
 
   console.log('req.originalUrl = ', req.originalUrl)
   
   var cfg = req.app.get('app config by name')
 
-  console.log("readdir: cfg = ", cfg)
+  console.log("%s: cfg = ", MODNAME, cfg)
 
   var root = req.query.root
   var root_fqdn = cfg['video roots'][root].fqdn
   var subdirs = u.clone(req.query.subdirs) || []
   var exts = cfg['acceptable extensions']
-  console.log("readdir: exts = %j", exts)
+  console.log("%s: exts = %j", MODNAME, exts)
+
+  // See routes/index.js for how I came up with this rx
+  var rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
+
+  if (root.match(rx)) {
+    console.error('%s: HACKING ATTEMPT root=%j matched %s', MODNAME
+                 , root, rx.toString())
+    res.status(403).end('FUCK OFF')
+    return
+  }
+
+  for (let subdir of subdirs) {
+    if (subdir.match(rx)) {
+      console.error('%s: HACKING ATTEMPT subdir=%j matched %s', MODNAME
+                   , subdir, rx.toString())
+      res.status(403).end('FUCK OFF')
+      return
+    }
+  }
+
+  if (file.match(rx)) {
+    console.error('%s: HACKING ATTEMPT file=%j matched %s', MODNAME
+                 , file, rx.toString())
+    res.status(403).end('FUCK OFF')
+    return
+  }
 
   // Stop any hacking attempt to '..' below '/'
-  console.log('readdir: subdirs = %j', subdirs)
+  console.log('%s: subdirs = %j', MODNAME, subdirs)
 
-  subdirs.unshift('/')
-  var nmldir = path.join.apply(path, subdirs)
-  nmldir = nmldir.slice(1) // take off the /
-  subdirs.shift()
+  //subdirs.unshift('/')
+  //var nmldir = path.join.apply(path, subdirs)
+  //nmldir = nmldir.slice(1) // take off the /
+  //subdirs.shift()
+  //console.log('%s: nmldir = %s', MODNAME, nmldir)
+  //var fqdn = path.join(root_fqdn, nmldir)
 
-  console.log('readdir: nmldir = %s', nmldir)
+  var parts = [root_fqdn]
+  parts = parts.concat(subdirs)
+  parts.push(file)
 
-  var fqdn = path.join(root_fqdn, nmldir)
+  var fqdn = path.join.apply(path, parts)
 
-  console.log("readdir: fqdn = %j", fqdn)
+  console.log("%s: fqdn = %j", MODNAME, fqdn)
   
   fs.readdirAsync(fqdn).map(function(fileName) {
-    console.log("readdir: fileName = %j", fileName)
+    console.log("%s: fileName = %j", MODNAME, fileName)
     var fqfn = path.join(fqdn, fileName)
     var stat = fs.statAsync(fqfn);
 
@@ -91,13 +127,13 @@ module.exports = function (req, res) {
                }
       , json_str = JSON.stringify(json)
     
-    console.log("readdir: sending json:\n"
+    console.log("%s: sending json:\n", MODNAME
                , util.inspect(json, {depth:null}))
     
     res.set("Content-type", "application/json")
     res.send(json_str)
 
     if (other.length)
-      console.error("NOT FILE OR DIRECTORY: %j", other)
+      console.error("%s: NOT FILE OR DIRECTORY: %j", MODNAME, other)
   })
-}
+} //end: readdir()
