@@ -120,6 +120,7 @@ let index     = require('./routes/index')
   , stream    = require('./routes/stream')
   , readdir   = require('./routes/readdir')
   , findtrack = require('./routes/findtrack')
+//  , track     = require('./routes/track')
 
 debug("typeof readdir = ", typeof readdir)
 
@@ -127,8 +128,8 @@ app.get('/', index)
 app.get('/readdir', readdir)
 app.get('/findtrack', findtrack)
 
-//var stream_rx = /\/stream\/([^\/]+)((?:\/[^\/]+(?:\/[^\/]+)*)?)\/([^\/]+)$/;
-var stream_rx = /\/stream\//;
+//var stream_rx = /^\/stream\/([^\/]+)((?:\/[^\/]+(?:\/[^\/]+)*)?)\/([^\/]+)$/;
+var stream_rx = /^\/stream\//;
 app.get(stream_rx, stream)
 
 // error handlers
