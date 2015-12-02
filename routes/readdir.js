@@ -29,8 +29,8 @@ function filterFilesByExt(files, exts) {
       if (path.extname(fn).substr(1) == ext) {
         return true
       }
-      return false
     }
+    return false
   })
 }
 
@@ -68,26 +68,11 @@ module.exports = function readdir(req, res, next) {
     }
   }
 
-  if (file.match(rx)) {
-    console.error('%s: HACKING ATTEMPT file=%j matched %s', MODNAME
-                 , file, rx.toString())
-    res.status(403).end('FUCK OFF')
-    return
-  }
-
   // Stop any hacking attempt to '..' below '/'
   console.log('%s: subdirs = %j', MODNAME, subdirs)
 
-  //subdirs.unshift('/')
-  //var nmldir = path.join.apply(path, subdirs)
-  //nmldir = nmldir.slice(1) // take off the /
-  //subdirs.shift()
-  //console.log('%s: nmldir = %s', MODNAME, nmldir)
-  //var fqdn = path.join(root_fqdn, nmldir)
-
   var parts = [root_fqdn]
   parts = parts.concat(subdirs)
-  parts.push(file)
 
   var fqdn = path.join.apply(path, parts)
 
@@ -118,7 +103,9 @@ module.exports = function readdir(req, res, next) {
         other.push(result.file)
     })
 
+    console.log('%s: before filter files = %j', MODNAME, files)
     files = filterFilesByExt(files, exts)
+    console.log('%s: after filter files = %j', MODNAME, files)
     
     var json = { root    : root
                , subdirs : subdirs

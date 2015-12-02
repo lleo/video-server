@@ -30,8 +30,8 @@ function filterFilesByExt(files, exts) {
       if (path.extname(fn).substr(1) == ext) {
         return true
       }
-      return false
     }
+    return false
   })
 }
 
