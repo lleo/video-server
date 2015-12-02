@@ -3,6 +3,8 @@ var fs = require('fs')
   , path = require('path')
   , util = require('util')
 
+const MODNAME = path.parse(module.filename).name
+
 module.exports = streamVideo
 //module.exports = streamTest
 
@@ -13,25 +15,6 @@ var ext2mimeType = {
 , "ogv" : "video/ogg"
 }
 
-function streamTest(req, res, next) {
-  console.log('HERE 1')
-
-  var app = req.app
-
-  console.log('HERE 2')
-
-  console.log('stream: req.path = %j', req.path)
-
-  console.log('HERE 3')
-
-  var p = decodeURI(req.path).split('/')
-
-  console.log('p = %j', p)
-
-  
-//  res.status(404).send("Sorry can't find that.")
-}
-
 function streamVideo(req, res, next) {
   'use strict';
   var app = res.app
@@ -40,33 +23,33 @@ function streamVideo(req, res, next) {
   var root = p[2]
   var subdirs = p.slice(3,p.length-1)
   var file = p[p.length-1]
-  //console.log('stream: root = %j', root)
-  //console.log('stream: subdirs = %j', subdirs)
-  //console.log('stream: file = %j', file)
+  //console.log('%s: root = %j', MODNAME, root)
+  //console.log('%s: subdirs = %j', MODNAME, subdirs)
+  //console.log('%s: file = %j', MODNAME, file)
 
   // See routes/index.js for how I came up with this rx
   var rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
 
   if (root.match(rx)) {
-    console.error('stream: HACKING ATTEMPT root=%j matched %s'
+    console.error('%s: HACKING ATTEMPT root=%j matched %s', MODNAME
                  , root, rx.toString())
-    res.status(404).end('FUCK OFF')
+    res.status(403).end('FUCK OFF')
     return
   }
 
   for (let subdir of subdirs) {
     if (subdir.match(rx)) {
-      console.error('stream: HACKING ATTEMPT subdir=%j matched %s'
+      console.error('%s: HACKING ATTEMPT subdir=%j matched %s', MODNAME
                    , subdir, rx.toString())
-      res.status(404).end('FUCK OFF')
+      res.status(403).end('FUCK OFF')
       return
     }
   }
 
   if (file.match(rx)) {
-    console.error('stream: HACKING ATTEMPT file=%j matched %s'
+    console.error('%s: HACKING ATTEMPT file=%j matched %s', MODNAME
                  , file, rx.toString())
-    res.status(404).end('FUCK OFF')
+    res.status(403).end('FUCK OFF')
     return
   }
 
@@ -76,19 +59,24 @@ function streamVideo(req, res, next) {
   //var subdirs = subdirsStr == '' ? [] : subdirsStr.split('/')
   //var file = req.params[2]
 
-  subdirs.unshift('/')
-  var nmldir = path.resolve.apply(path, subdirs)
-  nmldir = nmldir.slice(1) // take the / off
-
   var app_cfg = app.get('app config by name')
   var root_fqdn = app_cfg['video roots'][root].fqdn
 
-  var vid_path = [root_fqdn, nmldir]
-  vid_path.push(file)
-  //console.log('stream: vid_path = %j', vid_path)
+  //subdirs.unshift('/')
+  //var nmldir = path.resolve.apply(path, subdirs)
+  //nmldir = nmldir.slice(1) // take the / off
+  //subdirs.shift() // remove the '/' entry from subdirs
+  //var root_fqdn = app_cfg['video roots'][root].fqdn
+  //var vid_path = [root_fqdn, nmldir]
+  //vid_path.push(file)
+  //console.log('%s: vid_path = %j', MODNAME, vid_path)
 
-  var video_fqfn = path.join.apply(path, vid_path)
-  //console.log("stream: video_fqfn=%s", video_fqfn)
+  var parts = [root_fqdn]
+  parts = parts.concat(subdirs)
+  parts.push(file)
+  
+  var video_fqfn = path.join.apply(path, parts)
+  console.log("%s: video_fqfn=%s", MODNAME, video_fqfn)
 
   var ext = path.extname(video_fqfn).toLowerCase().replace(/^\./, '')
   var vidstat, total
@@ -98,16 +86,16 @@ function streamVideo(req, res, next) {
     vidstat = fs.statSync(video_fqfn)
     total = vidstat.size
   } catch (x) {
-    console.error("streamVideo: ", x)
+    console.error("%s: caught exception %j", MODNAME, x)
     next()
     return
   }
 
-  console.log("stream: %s %s", req.method, req.url)
-  console.log("stream: headers =", util.inspect(req.headers))
+  console.log("%s: %s %s", MODNAME, req.method, req.url)
+  console.log("%s: headers =", MODNAME, util.inspect(req.headers))
 
   mimetype = ext2mimeType[ext]
-  //console.log("stream: !!! ext=%s; mimetype=%s;", ext, mimetype)
+  //console.log("%s: !!! ext=%s; mimetype=%s;", MODNAME, ext, mimetype)
 
   if ( req.headers['range'] ) {
     var range = req.headers.range
@@ -118,13 +106,13 @@ function streamVideo(req, res, next) {
       , end = partialend ? parseInt(partialend, 10) : total-1
       , chunksize = (end-start)+1
 
-    console.log('stream: RANGE: ' + start + ' - ' + end + ' = ' + chunksize)
+    console.log('%s: RANGE: %d - %d = %d', MODNAME, end, start, chunksize)
 
     var file_rstream
     try {
       file_rstream = fs.createReadStream(video_fqfn, {start: start, end: end})
     } catch (x) {
-      console.error('stream: Caught Exception; x = %j', x)
+      console.error('%s: Caught Exception; x = %j', MODNAME, x)
       return
     }
 
@@ -143,7 +131,7 @@ function streamVideo(req, res, next) {
     file_rstream.pipe(res)
   }
   else {
-    console.log('stream: ALL: ' + total)
+    console.log('%s: ALL: %d', MODNAME, total)
     res.status(200)
     res.set({'Content-Length': total
             , 'Content-Type': mimetype
@@ -153,7 +141,7 @@ function streamVideo(req, res, next) {
     try {
       file_stream = fs.createReadStream(video_fqfn)
     } catch (x) {
-      console.error('stream: Caught Exception x = %j', x)
+      console.error('%s: Caught Exception x = %j', MODNAME, x)
       return
     }
     file_stream.pipe(res)
