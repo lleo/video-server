@@ -68,7 +68,7 @@
           videoContents.addVideoContent( oldState.root
                                        , oldState.subdirs
                                        , oldState.file
-                                                     , otime )
+                                       , otime )
         }
       })
     } //end: VideoApp__setupWindowEvents()
@@ -166,7 +166,7 @@
                             , self.initialLoad.subdirs
                             , self.initialLoad.file
                             , self.initialLoad.time )
-        self.contents[0].$dom.focus()
+        //self.contents[0].$dom.focus()
       }, 0)
     }
 
@@ -200,14 +200,66 @@
       videoControls.reset()
 
       var vidNum = this.contents.length
-      
+
       var videoContent = new VideoContent(vidNum, root, subdirs, file,
                                           initTime, this.videoApp)
 
       this.contents.push(videoContent)
-
       this.$dom.append(videoContent.$dom)
-    }
+
+      info() && console.log('VideoContents__addVideoContent: added new VideoContent')
+      info() && console.log('VideoContents__addVideoContent: calling out to "findtrack"')
+      var self = this
+      function findtrackSuccess(data) {
+        info() && console.log('findtrackSuccess: data = %o', data)
+
+        var tracks = []
+        if ( data.tracks && _.isArray(data.tracks) &&
+             data.tracks.every(function(e) { return _.isString(e) }) ) {
+          tracks = data.tracks
+        }
+        else {
+          return
+        }
+
+        warn() && console.log('VideoContents__addVideoContent: findtrackSuccess: tracks = %o', tracks)
+
+        info() && console.log('VideoContents__addVideoContent: tracks.length = %d', tracks.length)
+        var $newTrack
+        if (tracks.length) {
+          info() && console.log('VideoContents__addVideoContent: tracks.length non-zero adding the first one as the default')
+          //the first track is set as default
+          $newTrack = $( document.createElement('track') )
+                      .attr('default', true)
+                      .attr('kind', 'subtitles') //or 'captions'; can be omitted
+                      .attr('src', tracks[0].uri)
+                      .attr('srclang', tracks[0].lang)
+                      .attr('label', tracks[0].label)
+
+          videoContent.$video.apped($newTrack)
+
+          for (var i=1; i<tracks.length; i+=1) {
+            info() && console.log('VideoContents__addVideoContent: adding track for i=%d', i)
+            $newTrack = $( document.createElement('track') )
+                        .attr('kind', 'subtitles') //or 'captions'; can be omitted
+                        .attr('src', tracks[i].uri)
+                        .attr('srclang', tracks[i].lang)
+                        .attr('label', tracks[i].label)
+
+            videoContent.$video.append($newTrack)
+          } //end: for
+        } //end: if
+      } //end: findtrackSuccess()
+      $.ajax({ url  : 'findtrack'
+             , type : 'GET'
+             , data : { root    : root
+                      , subdirs : subdirs
+                      , file    : file
+                      }
+             , success : findtrackSuccess
+             })
+
+    } //end: VideoContents__addVideoContent()
 
   VideoContents.prototype._setupEvents =
     function VideoContents___setupEvents() {
@@ -590,7 +642,8 @@
     history.pushState(state, null, url)
   } //end: VideoContents__setMark()
 
-  function VideoContent(vidNum, root, subdirs, file, initTime, videoApp) {
+  function VideoContent( vidNum, root, subdirs, file
+                       , initTime, videoApp ) {
     info() && console.log('VideoContent() constructor')
 
     this.vidNum   = vidNum
@@ -631,7 +684,7 @@
     
     var mimetype = determineMimetype(file)
     if (!mimetype) {
-      console.error("Unknown mimetype for file="+file)
+      console.error("VideoContent: !!!ERROR!!! Unknown mimetype for file="+file)
       mimetype = 'video/mp4' //just for shits-n-giggles
     }
 
@@ -643,7 +696,7 @@
 
     var $video = $( document.createElement('video') )
                  .attr('id', this.ids.video )
-                 .attr('controls', false)
+                 .attr('controls', true)
                  .addClass('videoDisplay')
                  .append($source)
 
