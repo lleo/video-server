@@ -7,6 +7,9 @@
 var util = require('util')
 var u = require('lodash')
 
+var path = require('path')
+const MODNAME = path.parse(module.filename).name
+
 function isNonEmptyString(e) {
   if (u.isString(e) && e.length) return true
   return false
@@ -16,7 +19,7 @@ module.exports = function(req, res, next){
   'use strict';
   var app_cfg = req.app.get('app config by name')
 
-  console.log("app_cfg =", util.inspect(app_cfg, {depth:null}))
+  console.log("%s: app_cfg =", MODNAME, util.inspect(app_cfg, {depth:null}))
 
   var cfg = { 'title'            : req.app.get('title')
             , 'video root names' : u.clone(app_cfg.order)
@@ -38,21 +41,22 @@ module.exports = function(req, res, next){
                * 'none' is a place holder for no logging except error
                * There is really only three optional levels info, warn, and crit.
                */
-            , 'debug'            : 'warn'
+            , 'debug'            : 'info'
             }
 
-  console.log('index: cfg["video root names"] =', cfg['video root names'])
+  console.log('%s: cfg["video root names"] = %j', MODNAME, cfg['video root names'])
 
-  console.log('index: req.query = %j', req.query)
+  console.log('%s: req.query = %j', MODNAME, req.query)
 
   var queryOk = (function checkQuery() {
     var load = {}
     var root, subdirs, file, time
     var rootNames = cfg['video root names']
-    console.log('checkQuery: req.query == trueish')
-    console.log('checkQuery: ', util.inspect(req.query, {depth:null,colors:true}))
+    console.log('%s: checkQuery: req.query == trueish', MODNAME)
+    console.log('%s: checkQuery: req.query:\n%s', MODNAME
+               , util.inspect(req.query, {depth:null,colors:true}))
     if ( !Object.keys(req.query).length ) {
-      console.log('index: checkQuery: req.query has no keys; fine, skipping the rest of checkQuery.')
+      console.log('%s: checkQuery: req.query has no keys; fine, skipping the rest of checkQuery.', MODNAME)
       return true
     }
 
@@ -92,7 +96,7 @@ module.exports = function(req, res, next){
   })()
 
   if (!queryOk) {
-    console.log('index: POST checkQuery(): BAD query calling next()')
+    console.log('%s: POST checkQuery(): BAD query calling next()', MODNAME)
     next()
     // FIXME: maybe I should do: http status 400 bad client request
     // res.status(400).render('bad_query')
@@ -146,28 +150,28 @@ module.exports = function(req, res, next){
   //   3 - '[beginning]..[end]'
   var rx
   if (cfg.load) {
-    console.log('index: cfg.load = %s', util.inspect(cfg.load, {depth:null,colors:true}))
+    console.log('%s: cfg.load = %s', MODNAME, util.inspect(cfg.load, {depth:null,colors:true}))
     rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
     // http response code 403 == Forbidden
     // see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
     for (let subdir of cfg.load.subdirs) {
-      console.log('subdir = %j', subdir)
+      console.log('%s: subdir = %j', MODNAME, subdir)
       if (subdir.match(rx)) {
-        console.log('index: %j.match(%s)', subdir, rx.toString())
+        console.error('%s: %j.match(%s)', MODNAME, subdir, rx.toString())
         res.status(403).end('FUCK OFF')
         return
       }
     }
-    console.log('index: subdirs passed')
+    //console.log('%s: subdirs passed', MODNAME)
     if (cfg.load.file.match(rx)) {
-      console.log('index: HACKING ATTEMPTY subdir contained ..')
+      console.log('%s: HACKING ATTEMPTY subdir contained ..', MODNAME)
       res.status(403).end('FUCK OFF')
       return
     }
-    console.log('index: file passed')
+    //console.log('%s: file passed', MODNAME)
   }
   
-  console.log("index: cfg = %j", { cfg: cfg })
+  console.log("%s: cfg = %j", MODNAME, { cfg: cfg })
   
   res.render('index', { pretty: true, cfg: cfg })
 };
