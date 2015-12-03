@@ -12,7 +12,7 @@
     this._eventsSetup = false
 
     this.debug = cfg.debug || 'info'
-    console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
+    info() && console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
     VideoApp.setLogLevel(this.debug)
 
     var videoControls = new VideoControls(cfg['controls config'], this)
@@ -215,10 +215,12 @@
 
         var tracks = []
         if ( data.tracks && _.isArray(data.tracks) &&
-             data.tracks.every(function(e) { return _.isString(e) }) ) {
+             data.tracks.every(function(e) { return _.isPlainObject(e) }) ) {
+          info() && console.log('findTrackSuccess: tracks are mostly wellformed')
           tracks = data.tracks
         }
         else {
+          warn() && console.log('findTrackSuccess: tracks are NOT wellformed')
           return
         }
 
@@ -236,7 +238,7 @@
                       .attr('srclang', tracks[0].lang)
                       .attr('label', tracks[0].label)
 
-          videoContent.$video.apped($newTrack)
+          videoContent.$video.append($newTrack)
 
           for (var i=1; i<tracks.length; i+=1) {
             info() && console.log('VideoContents__addVideoContent: adding track for i=%d', i)
@@ -375,7 +377,7 @@
 
   VideoContents.prototype._setupMouseEvents =
     function VideoContents___setupMouseEvents() {
-      console.log('VideoContents___setupMouseEvents: this._eventsSetup = %o', this._eventsSetup)
+      info() && console.log('VideoContents___setupMouseEvents: this._eventsSetup = %o', this._eventsSetup)
       if (this._eventsSetup) return
 
       var ms = this._mouseState
@@ -747,218 +749,6 @@
     this._eventsSetup = true
   }
 
-  //VideoContent.prototype._setupKeyboardEvents =
-  //  function VideoContent___setupKeyboardEvents() {
-  //    var self = this
-  //
-  //    function onKeyPress(e) {
-  //      info() && console.log('onKeyPress: called e =', e)
-  //      var videoControls = self.videoApp.videoControls
-  //      var videoContents = self.videoApp.videoContents
-  //
-  //      if ( videoContents.contents.length < 0 ) return
-  //
-  //      /* From https://api.jquery.com/keypress/
-  //       *  e.type 'keypress'
-  //       *  e.timeStamp Date.now()
-  //       *  e.keyCode number of char pressed
-  //       *  e.key ?
-  //       *  e.charCode number of char pressed
-  //       *  e.char ?
-  //       *  e.which number of char pressed
-  //       *  e.ctrlKey
-  //       *  e.shiftKey
-  //       *  e.altKey
-  //       *  e.metaKey
-  //       *  e.cacelable
-  //       *  e.target
-  //       *  e.relatedTarge
-  //       *  e.handleObj
-  //       *  e.data undefined
-  //       *  e.preventDefault()
-  //       *  e.stopPropagation()
-  //       *  e.stopImmediatePropagation()
-  //       * From: https://developer.mozilla.org/en-US/docs/Web/Events/keypress
-  //       *  e.originalEvent.target.id
-  //       *  e.originalEvent.type  type of event 'keypress'?
-  //       *  e.originalEvent.bubbles
-  //       *  e.originalEvent.cancelable
-  //       *  e.originalEvent.char the UniCode character of the key as a one element string
-  //       *  e.originalEvent.charCode the UniCode number (depricated)
-  //       *  e.originalEvent.repeat has the key been pressed long enough to be repeating
-  //       *  e.originalEvent.ctrlKey  true if control key was press along with this key
-  //       *  e.originalEvent.shiftKey ..ditto..
-  //       *  e.originalEvent.altKey   ..ditto..
-  //       *  e.originalEvent.metaKey  ..ditto..
-  //       */
-  //      var msg
-  //      var character = String.fromCharCode( e.charCode )
-  //
-  //      switch (character) {
-  //       case 'p':
-  //       case ' ':
-  //        info() && console.log("onKeyPress: '%s' pressed; $play.click()", character)
-  //        videoControls.$play.click()
-  //        break;
-  //
-  //       case 's':
-  //        info() && console.log("onKeyPress: 's' pressed; $skip.click()")
-  //        videoControls.$skip.click()
-  //        break;
-  //
-  //       case 'S':
-  //        info() && console.log("onKeyPress: 'S' pressed; long skip")
-  //        videoContents.seek( videoControls.skipForwSecs * 3 )
-  //        break;
-  //
-  //       case 'b':
-  //        info() && console.log("onKeyPress: 's' pressed; $back.click()")
-  //        videoControls.$back.click()
-  //        break;
-  //
-  //       case 'B':
-  //        info() && console.log("onKeyPress: 'B' pressed; long back")
-  //        videoContents.seek( -(videoControls.skipBackSecs * 3) )
-  //        break;
-  //
-  //       case 'F':
-  //        info() && console.log("onKeyPress: 'F' pressed; $fullscreen.click()")
-  //        videoControls.$fullscreen.click()
-  //        break;
-  //
-  //       default:
-  //        msg = "onKeyPress: Unknown KeyPress: "
-  //            + "e.char="+e.char+" "
-  //            + "e.charCode="+e.charCode+" "
-  //            + "e.keyCode="+e.keyCode+" "
-  //            + "char="+character
-  //        info() && console.log(msg)
-  //        //alert(msg)
-  //      }
-  //    }
-  //
-  //    //this.$dom.on('keypress', onKeyPress)
-  //    $(document).on('keypress', onKeyPress)
-  //  }
-
-  //VideoContent.prototype._setupMouseEvents =
-  //  function VideoContent___setupMouseEvents() {
-  //    if (this._eventsSetup) return
-  //
-  //    var hideBothTimerId
-  //      , firstThrottleTimerExecuted = true
-  //      , overControls = false
-  //
-  //    var self = this
-  //
-  //    function onMouseMove() {
-  //      //info() && console.log('onMouseMove: called')
-  //      // The algorithm is as follows:
-  //      // 0 - turn off the on 'mousemove' event handler
-  //      //   - show controls & cursor & start throttling the 'mousemove' events
-  //      // 1 - if 2000ms after the first throttle timer has fired,
-  //      //     then hide the controls & cursor
-  //      var videoControls = self.videoApp.videoControls
-  //
-  //      // Given that every time 50ms after a 'mousemove' event we disable
-  //      // and then reenable this timer function for 2000ms,
-  //      // **this function only fires** when no 'mousemove' events has
-  //      // occured for over 2050ms.
-  //      function hideBothTimerFn() {
-  //        // NOTE: The variable overControls is a boolean that is set true
-  //        // by the 'mouseenter' and false by the 'mouseleave' events
-  //        // See the onMouse{Enter,Leave} functions declared below.
-  //        if (!overControls && !videoControls.$dom.hasClass('hide'))
-  //          videoControls.$dom.addClass('hide')
-  //
-  //        if (!overControls && !self.$dom.hasClass('nocursor'))
-  //          self.$dom.addClass('nocursor')
-  //
-  //        // reset the firstThrottleTimerExecuted & hideBothTimerId
-  //        firstThrottleTimerExecuted = true
-  //        hideBothTimerId = undefined
-  //      }
-  //
-  //      // This is the second part of the throttle algorithm.
-  //      // First, every time onMouseMove() fires we turn off watching for
-  //      //   'mousemove' events and set this timer fuction (see below).
-  //      // When this timer function fires we turn the watch for 'mousemove'
-  //      //   events back on. So for 50ms the 'mousemove' events were ignored.
-  //      function throttleTimerFn() {
-  //        self.$dom.on('mousemove', onMouseMove)
-  //
-  //        // IF the the hideBothTimerFn has already been set
-  //        // OR this is the first in a sequence of 'mousemove' events
-  //        if (hideBothTimerId || firstThrottleTimerExecuted) {
-  //          clearTimeout(hideBothTimerId)
-  //          firstThrottleTimerExecuted = false
-  //          hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
-  //        }
-  //      }
-  //
-  //      // mouse moved -> disable on 'mousemove' events; throttling
-  //      self.$dom.off('mousemove', onMouseMove)
-  //
-  //      // mouse moved -> show controls
-  //      if ( videoControls.$dom.hasClass('hide') ) {
-  //        videoControls.$dom.removeClass('hide')
-  //      }
-  //
-  //      // mouse moved -> show cursor
-  //      if ( self.$dom.hasClass('nocursor') ) {
-  //        self.$dom.removeClass('nocursor')
-  //      }
-  //
-  //      // in 50ms (1/20th sec) reenable 'mousemove' events
-  //      setTimeout(throttleTimerFn, 50)
-  //    } //end: onMouseMove()
-  //
-  //    // This was a test to see if there was any jQuery or Browser trottleing
-  //    // of 'mousemove' events.
-  //    //function onMouseMove(e) { //[test]
-  //    //  info() && console.log('onMouseMove: overControls = %o', overControls)
-  //    //
-  //    //  function hideBothTimerFn() {
-  //    //    info() && console.log('hideBothTimerFn: overControls = %o', overControls)
-  //    //    hideBothTimerId = undefined
-  //    //    if (!overControls) {
-  //    //      if ( !self.videoApp.videoControls.$dom.hasClass('hide') ) {
-  //    //        self.videoApp.videoControls.$dom.addClass('hide')
-  //    //      }
-  //    //      if ( !self.$dom.hasClass('nocursor') ) {
-  //    //        self.$dom.addClass('nocursor')
-  //    //      }
-  //    //    }
-  //    //  }
-  //    //
-  //    //  // mouse moved -> show controls
-  //    //  if ( self.videoApp.videoControls.$dom.hasClass('hide') ) {
-  //    //
-  //    //    self.videoApp.videoControls.$dom.removeClass('hide')
-  //    //  }
-  //    //
-  //    //  // mouse moved -> show cursor
-  //    //  if ( self.$dom.hasClass('nocursor') ) {
-  //    //
-  //    //    self.$dom.removeClass('nocursor')
-  //    //  }
-  //    //
-  //    //  clearTimeout(hideBothTimerId)
-  //    //  hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
-  //    //} //end: onMouseMove() [test]
-  //    this.$dom.on('mousemove', onMouseMove)
-  //
-  //    function onMouseEnter(e) {
-  //      overControls = true
-  //    }
-  //    function onMouseLeave(e) {
-  //      overControls = false
-  //    }
-  //    this.videoApp.videoControls.$dom.on('mouseenter', onMouseEnter)
-  //    this.videoApp.videoControls.$dom.on('mouseleave', onMouseLeave)
-  //
-  //  } //end: VideoContent___setupMouseEvents()
-
   function stateEqualExceptTime(o, n) {
     if (_.isUndefined(o) || _.isUndefined(n)) return false
     if ( _.isEqual(o.root, n.root) &&
@@ -977,31 +767,6 @@
       //var videoControls = this.videoApp.videoControls
       
       var self = this
-
-      //$(window).on('popstate', function onPopState(e) {
-      //  info() && console.log('VideoContent: onPopState: e = %o', e)
-      //  var oldState = e.originalEvent.state
-      //  var curState = _.cloneDeep(self.state)
-      //  info() && console.log('VideoContent: onPopState: oldState = %o', oldState)
-      //  info() && console.log('VideoContent: onPopState: curState = %o', curState)
-      //  var otime = oldState.time
-      //  if (typeof otime == 'string') {
-      //    info() && console.log('VideoContent: onPopState: otime is a string %o', otime)
-      //    otime = parseFloat(otime)
-      //    info() && console.log('VideoContent: onPopState: otime = %f', otime)
-      //  }
-      //  var ctime = curState.time
-      //  if ( stateEqualExceptTime(oldState, curState)) {
-      //    info() && console.log('VideoContent: onPopState: oldState & curState (minus time) are the same')
-      //    self.setPosition(otime)
-      //  }
-      //  else {
-      //    self.videoApp.videoContents.addVideoContent( oldState.root
-      //                                               , oldState.subdirs
-      //                                               , oldState.file
-      //                                               , otime )
-      //  }
-      //})
 
       $video.on('loadeddata', function onLoadedData(e) {
         info() && console.log("onLoadedData: e.target.id=%s", e.target.id)
@@ -1732,7 +1497,7 @@
       this.$dom.removeClass('disabled')
     }
     else {
-      error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
+      console.error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
       console.trace()
       //return;
     }
@@ -1764,7 +1529,7 @@
       this.$dom.removeClass('enabled')
     }
     else {
-      error('WTF!!! VideoControls__disable: this.isEnabled() && !this.$dom.hasClass("enabled")')
+      console.error('WTF!!! VideoControls__disable: this.isEnabled() && !this.$dom.hasClass("enabled")')
       console.trace()
       //return
     }
