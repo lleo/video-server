@@ -142,31 +142,31 @@ div.btn {
 /*  min-width: 2em; */
 }
 
-div#videoControls {
+div#gVideoControls {
   z-index  : 2147483647;
   position : absolute;
   font-size: 16pt;
 }
 
-div#videoControls.disabled {
+div#gVideoControls.disabled {
   box-shadow: 0px 0px 20px 10px rgba(255,255,255,1);
   transform: scale(0.9);
   opacity: 0.7;  
 }
 
-div#videoControls.disabled div div {
+div#gVideoControls.disabled div div {
   box-shadow: 0px 0px 20px 10px rgba(255,255,255,1);
   transform: scale(0.9);
   opacity: 0.7;  
 }
 
-div#videoControls.disabled div div i {
+div#gVideoControls.disabled div div i {
   box-shadow: 0px 0px 20px 10px rgba(255,255,255,1);
   transform: scale(0.9);
   opacity: 0.7;  
 }
 
-div#videoControls.hide {
+div#gVideoControls.hide {
   display : none;
 }
 
@@ -178,7 +178,7 @@ div.spinner.hide {
   cursor : none;
 }
 
-div#videoControls.enabled {
+div#gVideoControls.enabled {
 
 }
 

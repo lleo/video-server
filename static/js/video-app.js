@@ -15,8 +15,8 @@
     info() && console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
     VideoApp.setLogLevel(this.debug)
 
-    var videoControls = new GlobalVideoControls(cfg['controls config'], this)
-    this.videoControls = videoControls
+    var gVideoControls = new GlobalVideoControls(cfg['controls config'], this)
+    this.gVideoControls = gVideoControls
 
     var videoContents = new VideoContents(cfg['load'], this)
     this.videoContents = videoContents
@@ -150,7 +150,7 @@
                 .attr('id', this.id)
                 //.addClass('videoContents')
                 .addClass('nocursor')
-                .append( videoApp.videoControls.$dom )
+                .append( videoApp.gVideoControls.$dom )
 
     this.contents = [] //array of VideoContent objects
     this._isFullscreen = false
@@ -196,8 +196,8 @@
       }
 //      this._resetMouseState()
 
-      var videoControls = this.videoApp.videoControls
-      videoControls.reset()
+      var gVideoControls = this.videoApp.gVideoControls
+      gVideoControls.reset()
 
       var vidNum = this.contents.length
 
@@ -278,7 +278,7 @@
 
       function onKeyPress(e) {
         info() && console.log('onKeyPress: called e =', e)
-        var videoControls = self.videoApp.videoControls
+        var gVideoControls = self.videoApp.gVideoControls
         var videoContents = self.videoApp.videoContents
 
         if ( videoContents.contents.length < 0 ) return
@@ -323,32 +323,32 @@
          case 'p':
          case ' ':
           info() && console.log("onKeyPress: '%s' pressed; $play.click()", character)
-          videoControls.$play.click()
+          gVideoControls.$play.click()
           break;
 
          case 's':
           info() && console.log("onKeyPress: 's' pressed; $skip.click()")
-          videoControls.$skip.click()
+          gVideoControls.$skip.click()
           break;
 
          case 'S':
           info() && console.log("onKeyPress: 'S' pressed; long skip")
-          videoContents.seek( videoControls.skipForwSecs * 3 )
+          videoContents.seek( gVideoControls.skipForwSecs * 3 )
           break;
 
          case 'b':
           info() && console.log("onKeyPress: 's' pressed; $back.click()")
-          videoControls.$back.click()
+          gVideoControls.$back.click()
           break;
 
          case 'B':
           info() && console.log("onKeyPress: 'B' pressed; long back")
-          videoContents.seek( -(videoControls.skipBackSecs * 3) )
+          videoContents.seek( -(gVideoControls.skipBackSecs * 3) )
           break;
 
          case 'F':
           info() && console.log("onKeyPress: 'F' pressed; $fullscreen.click()")
-          videoControls.$fullscreen.click()
+          gVideoControls.$fullscreen.click()
           break;
 
          default:
@@ -390,7 +390,7 @@
         //   - show controls & cursor & start throttling the 'mousemove' events
         // 1 - if 2000ms after the first throttle timer has fired,
         //     then hide the controls & cursor
-        var videoControls = self.videoApp.videoControls
+        var gVideoControls = self.videoApp.gVideoControls
 
         // Given that every time 50ms after a 'mousemove' event we disable
         // and then reenable this timer function for 2000ms,
@@ -400,8 +400,8 @@
           // NOTE: The variable overControls is a boolean that is set true
           // by the 'mouseenter' and false by the 'mouseleave' events
           // See the onMouse{Enter,Leave} functions declared below.
-          if (!ms.overControls && !videoControls.$dom.hasClass('hide'))
-            videoControls.$dom.addClass('hide')
+          if (!ms.overControls && !gVideoControls.$dom.hasClass('hide'))
+            gVideoControls.$dom.addClass('hide')
 
           if (!ms.overControls && !self.$dom.hasClass('nocursor'))
             self.$dom.addClass('nocursor')
@@ -431,8 +431,8 @@
         self.$dom.off('mousemove', onMouseMove)
 
         // mouse moved -> show controls
-        if ( videoControls.$dom.hasClass('hide') ) {
-          videoControls.$dom.removeClass('hide')
+        if ( gVideoControls.$dom.hasClass('hide') ) {
+          gVideoControls.$dom.removeClass('hide')
         }
 
         // mouse moved -> show cursor
@@ -453,8 +453,8 @@
       //    info() && console.log('hideBothTimerFn: overControls = %o', overControls)
       //    hideBothTimerId = undefined
       //    if (!overControls) {
-      //      if ( !self.videoApp.videoControls.$dom.hasClass('hide') ) {
-      //        self.videoApp.videoControls.$dom.addClass('hide')
+      //      if ( !self.videoApp.gVideoControls.$dom.hasClass('hide') ) {
+      //        self.videoApp.gVideoControls.$dom.addClass('hide')
       //      }
       //      if ( !self.$dom.hasClass('nocursor') ) {
       //        self.$dom.addClass('nocursor')
@@ -463,9 +463,9 @@
       //  }
       //
       //  // mouse moved -> show controls
-      //  if ( self.videoApp.videoControls.$dom.hasClass('hide') ) {
+      //  if ( self.videoApp.gVideoControls.$dom.hasClass('hide') ) {
       //
-      //    self.videoApp.videoControls.$dom.removeClass('hide')
+      //    self.videoApp.gVideoControls.$dom.removeClass('hide')
       //  }
       //
       //  // mouse moved -> show cursor
@@ -485,8 +485,8 @@
       function onMouseLeave(e) {
         ms.overControls = false
       }
-      this.videoApp.videoControls.$dom.on('mouseenter', onMouseEnter)
-      this.videoApp.videoControls.$dom.on('mouseleave', onMouseLeave)
+      this.videoApp.gVideoControls.$dom.on('mouseenter', onMouseEnter)
+      this.videoApp.gVideoControls.$dom.on('mouseleave', onMouseLeave)
 
     } //end: VideoContents___setupMouseEvents()
 
@@ -761,7 +761,7 @@
       if (this._eventsSetup) return
 
       var $video = this.$video
-      //var videoControls = this.videoApp.videoControls
+      //var gVideoControls = this.videoApp.gVideoControls
       
       var self = this
 
@@ -784,16 +784,16 @@
             , self.videoWidth, self.videoHeight)
 
         info() && console.log('onLoadedData: self.$video[0].duration = %f', self.$video[0].duration)
-        var videoControls = self.videoApp.videoControls
+        var gVideoControls = self.videoApp.gVideoControls
 
         if (0 == self.vidNum) {
-          //if ( !videoControls.isEnabled() ) videoControls.enable()
-          videoControls.$positionRng[0].max = self.$video[0].duration
+          //if ( !gVideoControls.isEnabled() ) gVideoControls.enable()
+          gVideoControls.$positionRng[0].max = self.$video[0].duration
         }
 
         if (self.initTime) {
           console.log('onLoadedData: self.initTime = %f', self.initTime)
-          if (0 == self.vidNum) videoControls.setPosition(self.initTime)
+          if (0 == self.vidNum) gVideoControls.setPosition(self.initTime)
           self.setPosition(self.initTime)
         }
         
@@ -817,9 +817,9 @@
                              , self.$video[0].readyState
                              , self.canPlay)
 
-        var videoControls = self.videoApp.videoControls
-        if ( !videoControls.isEnabled() ) videoControls.enable()
-        videoControls.cssPositionControls()
+        var gVideoControls = self.videoApp.gVideoControls
+        if ( !gVideoControls.isEnabled() ) gVideoControls.enable()
+        gVideoControls.cssPositionControls()
         self.cssCenterSpinner()
       })
       
@@ -848,17 +848,17 @@
       })
 
       $video.on('timeupdate', function onTimeUpdate(e){
-        var videoControls = self.videoApp.videoControls
-        videoControls.$positionRng[0].value = e.target.currentTime
-        videoControls.$positionNum[0].value = Math.floor(e.target.currentTime)
+        var gVideoControls = self.videoApp.gVideoControls
+        gVideoControls.$positionRng[0].value = e.target.currentTime
+        gVideoControls.$positionNum[0].value = Math.floor(e.target.currentTime)
       })
 
       $video.on('ended', function onEnded(e){
         info() && console.log("onEnded: e.target.id=%s", e.target.id)
 
 
-        //var $play = self.videoApp.videoControls.$play
-        var $playSym = self.videoApp.videoControls.$playSym
+        //var $play = self.videoApp.gVideoControls.$play
+        var $playSym = self.videoApp.gVideoControls.$playSym
         
         if ($playSym.hasClass('fa-pause')) {
           $playSym.removeClass('fa-pause')
@@ -882,11 +882,11 @@
 
   VideoContent.prototype.startBusy = function VideoContent__startBusy() {
     info() && console.log('VideoContent__startBusy:')
-    var videoControls = this.videoApp.videoControls
+    var gVideoControls = this.videoApp.gVideoControls
 
     if (0 == this.vidNum) {
       //disable the controls
-      videoControls.disable()
+      gVideoControls.disable()
     }
 
     //remove the hide class from the $spinner
@@ -899,11 +899,11 @@
 
   VideoContent.prototype.stopBusy = function VideoContent__stopBusy() {
     info() && console.log('VideoContent__stopBusy:')
-    var videoControls = this.videoApp.videoControls
+    var gVideoControls = this.videoApp.gVideoControls
 
     if (0 == this.vidNum) {
       //enable the controls
-      videoControls.enable()
+      gVideoControls.enable()
     }
 
     //add the hide class from the $spinner
@@ -916,8 +916,8 @@
   
   VideoContent.prototype.fullscreenChanged =
     function VideoContent__fullscreenChanged(e) {
-      var videoControls = this.videoApp.videoControls
-      var $fullscreenSym = videoControls.$fullscreenSym
+      var gVideoControls = this.videoApp.gVideoControls
+      var $fullscreenSym = gVideoControls.$fullscreenSym
 
       var self = this
 
@@ -930,7 +930,7 @@
        */
       setTimeout(function() {
         self.cssCenterSpinner()
-        videoControls.cssPositionControls()
+        gVideoControls.cssPositionControls()
       }, 500)
       
       if ( $fullscreenSym.hasClass('fa-arrows-alt') ) {
@@ -1083,7 +1083,7 @@
 
     this._enabled = false
 
-    this.ids = { div           : 'videoControls'
+    this.ids = { div           : 'gVideoControls'
                , flexWrapper   : 'flexWrapper'
                , playSym       : 'playSym'
                , pauseSym      : 'pauseSym'
@@ -1424,7 +1424,7 @@
       if ( videoContents.contents.length ) {
         //grab the first $dom where the controls are under
         $dom = videoContents.$dom
-        $controls = $('#videoControls')
+        $controls = $('#gVideoControls')
         offset = ($dom.width()/2) - ($controls.width()/2)
         $controls.css({top: 10, left: offset})
       }
