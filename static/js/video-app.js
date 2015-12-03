@@ -15,7 +15,7 @@
     info() && console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
     VideoApp.setLogLevel(this.debug)
 
-    var videoControls = new VideoControls(cfg['controls config'], this)
+    var videoControls = new GlobalVideoControls(cfg['controls config'], this)
     this.videoControls = videoControls
 
     var videoContents = new VideoContents(cfg['load'], this)
@@ -727,10 +727,7 @@
                 .addClass('videoContent')
                 .append( this.$video )
 
-    if (0 == vidNum) {
-      this.$dom.append( this.$spinner )
-      //this.$dom.append( videoApp.videoControls.$dom )
-    }
+    this.$dom.append( this.$spinner )
 
     this._setupEvents()
   } //end: VideoContent()
@@ -1076,7 +1073,7 @@
 
 
 
-  function VideoControls(_cfg, videoApp) {
+  function GlobalVideoControls(_cfg, videoApp) {
     this.videoApp = videoApp
     //this.videoContents = videoApp.videoContents
     var cfg = _.cloneDeep(_cfg) || {}
@@ -1411,16 +1408,16 @@
 
     this.$flexWrapper.append( this.$mark )
     //this.enable()
-  } //end: VideoControls()
+  } //end: GlobalVideoControls()
 
-  VideoControls.prototype.setPosition =
-    function VideoControls__setPosition(fsecs) {
+  GlobalVideoControls.prototype.setPosition =
+    function GlobalVideoControls__setPosition(fsecs) {
       this.$positionNum[0].value = fsecs
       this.$positionRng[0].value = fsecs
     }
 
-  VideoControls.prototype.cssPositionControls =
-    function VideoControls__cssPositionControls() {
+  GlobalVideoControls.prototype.cssPositionControls =
+    function GlobalVideoControls__cssPositionControls() {
       var videoContents, $dom, $controls, offset
       
       videoContents = this.videoApp.videoContents
@@ -1433,44 +1430,47 @@
       }
     }
 
-  VideoControls.prototype.setVolume = function VideoControls__setVolume(pct) {
-    pct = Math.floor(pct) //want it to be an integer
-    if (pct < 0) pct = 0
-    if (pct > 100) pct = 100
-    this.$volumeRng[0].value = pct
+  GlobalVideoControls.prototype.setVolume =
+    function GlobalVideoControls__setVolume(pct) {
+      pct = Math.floor(pct) //want it to be an integer
+      if (pct < 0) pct = 0
+      if (pct > 100) pct = 100
+      this.$volumeRng[0].value = pct
 
-    if (this.$playSym.hasClass('fa-volume-off')) {
-      this.removeClass('fa-volume-off')
-    }
-    if (pct < 50) {
-      if ( this.$playSym.hasClass('fa-volume-up') ) {
-        this.$playSym.removeClass('fa-volume-up')
+      if (this.$playSym.hasClass('fa-volume-off')) {
+        this.removeClass('fa-volume-off')
       }
-      this.$playSym.addClass('fa-volume-down')
-    }
-    else {
-      if ( this.$playSym.hasClass('fa-volume-down') ) {
-        this.$playSym.removeClass('fa-voluem-down')
+      if (pct < 50) {
+        if ( this.$playSym.hasClass('fa-volume-up') ) {
+          this.$playSym.removeClass('fa-volume-up')
+        }
+        this.$playSym.addClass('fa-volume-down')
       }
-      this.$playSym.addClass('fa-volume-up')
+      else {
+        if ( this.$playSym.hasClass('fa-volume-down') ) {
+          this.$playSym.removeClass('fa-voluem-down')
+        }
+        this.$playSym.addClass('fa-volume-up')
+      }
     }
-  }
 
-  VideoControls.prototype.setPosition =
-    function VideoControls__setPosition(fsecs) {
+  GlobalVideoControls.prototype.setPosition =
+    function GlobalVideoControls__setPosition(fsecs) {
       if (fsecs < 0) fsecs = 0
       this.$positionRng[0].value = fsecs
       this.$positionNum[0].value = Math.floor(fsecs)
     }
 
-  VideoControls.prototype.setPlayable = function VideoControls__setPlayable() {
-    if (this.$playSym.hasClass('fa-pause')) {
-      this.$playSym.removeClass('fa-pause')
-      this.$playSym.addClass('fa-play')
+  GlobalVideoControls.prototype.setPlayable =
+    function GlobalVideoControls__setPlayable() {
+      if (this.$playSym.hasClass('fa-pause')) {
+        this.$playSym.removeClass('fa-pause')
+        this.$playSym.addClass('fa-play')
+      }
     }
-  }
   
-  VideoControls.prototype.reset = function VideoControls__reset() {
+  GlobalVideoControls.prototype.reset =
+    function GlobalVideoControls__reset() {
     if ( this.isEnabled() ) this.disable()
     if (this.$playSym.hasClass('fa-pause')) {
       this.$playSym.removeClass('fa-pause')
@@ -1481,14 +1481,15 @@
     this.setPlayable()
   }
 
-  VideoControls.prototype.isEnabled = function VideoControls__isEnabled() {
-    return this._enabled
-  }
+  GlobalVideoControls.prototype.isEnabled =
+    function GlobalVideoControls__isEnabled() {
+      return this._enabled
+    }
   
-  VideoControls.prototype.enable = function VideoControls__enable() {
-    info() && console.log('VideoControls__enable: this._enabled = %o', this._enabled)
+  GlobalVideoControls.prototype.enable = function GlobalVideoControls__enable() {
+    info() && console.log('GlobalVideoControls__enable: this._enabled = %o', this._enabled)
     if ( this.isEnabled() ) {
-      warn() && console.log('VideoControls__enable: controls already enabled!')
+      warn() && console.log('GlobalVideoControls__enable: controls already enabled!')
       console.trace()
       return
     }
@@ -1497,7 +1498,7 @@
       this.$dom.removeClass('disabled')
     }
     else {
-      console.error('WTF!!! VideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
+      console.error('WTF!!! GlobalVideoControls__enable: !this.isEnabled() && !this.$dom.hasClass("disabled")')
       console.trace()
       //return;
     }
@@ -1515,36 +1516,37 @@
     this.$mark.on('click', this.onMarkClickFn)
 
     return this._enabled = true
-  } //end: VideoControls__enable()
+  } //end: GlobalVideoControls__enable()
 
-  VideoControls.prototype.disable = function VideoControls__disable() {
-    info() && console.log('VideoControls__disable: this._enabled = %o', this._enabled)
-    if ( !this.isEnabled() ) {
-      warn() && console.log('VideoControls__disable: controls already disabled')
-      console.trace()
-      return
-    }
+  GlobalVideoControls.prototype.disable =
+    function GlobalVideoControls__disable() {
+      info() && console.log('GlobalVideoControls__disable: this._enabled = %o', this._enabled)
+      if ( !this.isEnabled() ) {
+        warn() && console.log('GlobalVideoControls__disable: controls already disabled')
+        console.trace()
+        return
+      }
 
-    if ( this.$dom.hasClass('enabled') ) {
-      this.$dom.removeClass('enabled')
-    }
-    else {
-      console.error('WTF!!! VideoControls__disable: this.isEnabled() && !this.$dom.hasClass("enabled")')
-      console.trace()
-      //return
-    }
+      if ( this.$dom.hasClass('enabled') ) {
+        this.$dom.removeClass('enabled')
+      }
+      else {
+        console.error('WTF!!! GlobalVideoControls__disable: this.isEnabled() && !this.$dom.hasClass("enabled")')
+        console.trace()
+        //return
+      }
 
-    if ( !this.$dom.hasClass('disabled') ) this.$dom.addClass('disabled')
+      if ( !this.$dom.hasClass('disabled') ) this.$dom.addClass('disabled')
 
-    this.$play.off('click', this.onPlayClickFn)
-    this.$skip.off('click', this.onSkipClickFn)
-    this.$back.off('click', this.onBackClickFn)
-    this.$fullscreen.off('click', this.onFullscreenClickFn)
-    this.$volumeSym.off('click', this.onVolumeSymClickFn)
-    this.$mark.off('click', this.onMarkClickFn)
+      this.$play.off('click', this.onPlayClickFn)
+      this.$skip.off('click', this.onSkipClickFn)
+      this.$back.off('click', this.onBackClickFn)
+      this.$fullscreen.off('click', this.onFullscreenClickFn)
+      this.$volumeSym.off('click', this.onVolumeSymClickFn)
+      this.$mark.off('click', this.onMarkClickFn)
 
-    this._enabled = false
-  } //end: VideoControls__disable()
+      this._enabled = false
+    } //end: GlobalVideoControls__disable()
 
   VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
     'use strict';
@@ -1685,6 +1687,7 @@
          case right:
           info() && console.log("fileBrowser.$rootSelect: onKeyDown: right should focus right")
           e.stopImmediatePropagation()
+          e.preventDefault()
           self.focusNext()
           break;
 
@@ -1912,12 +1915,14 @@
          case left:
           info() && console.log("dirSelect[%d].$select: onKeyDown: left should focus left", self.dirNum)
           e.stopImmediatePropagation()
+          e.preventDefault()
           self.focusPrev()
           break;
 
          case right:
           info() && console.log("fileBrowser.$rootSelect: onKeyDown: right should focus right")
           e.stopImmediatePropagation()
+          e.preventDefault()
           self.focusNext()
           break;
 
