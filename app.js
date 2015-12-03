@@ -106,8 +106,8 @@ morgan.token('time', function(req,res) {
        +'.'+pad3(d.getMilliseconds())
 })
 // morgan logs on request
-app.use(morgan('[:time] :method :url - ":referrer" ":user-agent"'
-       , { immediate : true }))
+//app.use(morgan('[:time] :method :url - ":referrer" ":user-agent"'
+//       , { immediate : true }))
 // morgan logs on response
 app.use(morgan('[:time] :method :url :status :response-time ms - :res[content-length]'))
 
@@ -120,7 +120,7 @@ let index     = require('./routes/index')
   , stream    = require('./routes/stream')
   , readdir   = require('./routes/readdir')
   , findtrack = require('./routes/findtrack')
-//  , track     = require('./routes/track')
+  , track     = require('./routes/track')
 
 debug("typeof readdir = ", typeof readdir)
 
@@ -131,6 +131,9 @@ app.get('/findtrack', findtrack)
 //var stream_rx = /^\/stream\/([^\/]+)((?:\/[^\/]+(?:\/[^\/]+)*)?)\/([^\/]+)$/;
 var stream_rx = /^\/stream\//;
 app.get(stream_rx, stream)
+
+var track_rx = /^\/track\//;
+app.get(track_rx, track)
 
 // error handlers
 
