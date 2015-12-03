@@ -19,7 +19,7 @@ module.exports = function(req, res, next){
   'use strict';
   var app_cfg = req.app.get('app config by name')
 
-  console.log("%s: app_cfg =", MODNAME, util.inspect(app_cfg, {depth:null}))
+  //console.log("%s: app_cfg =", MODNAME, util.inspect(app_cfg, {depth:null}))
 
   var cfg = { 'title'            : req.app.get('title')
             , 'video root names' : u.clone(app_cfg.order)
@@ -41,20 +41,20 @@ module.exports = function(req, res, next){
                * 'none' is a place holder for no logging except error
                * There is really only three optional levels info, warn, and crit.
                */
-            , 'debug'            : 'info'
+            , 'debug'            : 'warn'
             }
 
   console.log('%s: cfg["video root names"] = %j', MODNAME, cfg['video root names'])
 
-  console.log('%s: req.query = %j', MODNAME, req.query)
+  //console.log('%s: req.query = %j', MODNAME, req.query)
 
   var queryOk = (function checkQuery() {
     var load = {}
     var root, subdirs, file, time
     var rootNames = cfg['video root names']
-    console.log('%s: checkQuery: req.query == trueish', MODNAME)
-    console.log('%s: checkQuery: req.query:\n%s', MODNAME
-               , util.inspect(req.query, {depth:null,colors:true}))
+    //console.log('%s: checkQuery: req.query == trueish', MODNAME)
+    //console.log('%s: checkQuery: req.query:\n%s', MODNAME
+    //           , util.inspect(req.query, {depth:null,colors:true}))
     if ( !Object.keys(req.query).length ) {
       console.log('%s: checkQuery: req.query has no keys; fine, skipping the rest of checkQuery.', MODNAME)
       return true
@@ -150,12 +150,12 @@ module.exports = function(req, res, next){
   //   3 - '[beginning]..[end]'
   var rx
   if (cfg.load) {
-    console.log('%s: cfg.load = %s', MODNAME, util.inspect(cfg.load, {depth:null,colors:true}))
+    //console.log('%s: cfg.load = %s', MODNAME, util.inspect(cfg.load, {depth:null,colors:true}))
     rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
     // http response code 403 == Forbidden
     // see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
     for (let subdir of cfg.load.subdirs) {
-      console.log('%s: subdir = %j', MODNAME, subdir)
+      //console.log('%s: subdir = %j', MODNAME, subdir)
       if (subdir.match(rx)) {
         console.error('%s: %j.match(%s)', MODNAME, subdir, rx.toString())
         res.status(403).end('FUCK OFF')
@@ -164,14 +164,14 @@ module.exports = function(req, res, next){
     }
     //console.log('%s: subdirs passed', MODNAME)
     if (cfg.load.file.match(rx)) {
-      console.log('%s: HACKING ATTEMPTY subdir contained ..', MODNAME)
+      console.error('%s: HACKING ATTEMPTY subdir contained ..', MODNAME)
       res.status(403).end('FUCK OFF')
       return
     }
     //console.log('%s: file passed', MODNAME)
   }
   
-  console.log("%s: cfg = %j", MODNAME, { cfg: cfg })
+  //console.log("%s: cfg = %j", MODNAME, { cfg: cfg })
   
   res.render('index', { pretty: true, cfg: cfg })
 };

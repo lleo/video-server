@@ -53,30 +53,15 @@ function streamVideo(req, res, next) {
     return
   }
 
-  //var root = req.params[0]
-  //var subdirsStr = req.params[1]
-  //subdirsStr = subdirsStr.slice(1)
-  //var subdirs = subdirsStr == '' ? [] : subdirsStr.split('/')
-  //var file = req.params[2]
-
   var app_cfg = app.get('app config by name')
   var root_fqdn = app_cfg['video roots'][root].fqdn
-
-  //subdirs.unshift('/')
-  //var nmldir = path.resolve.apply(path, subdirs)
-  //nmldir = nmldir.slice(1) // take the / off
-  //subdirs.shift() // remove the '/' entry from subdirs
-  //var root_fqdn = app_cfg['video roots'][root].fqdn
-  //var vid_path = [root_fqdn, nmldir]
-  //vid_path.push(file)
-  //console.log('%s: vid_path = %j', MODNAME, vid_path)
 
   var parts = [root_fqdn]
   parts = parts.concat(subdirs)
   parts.push(file)
   
   var video_fqfn = path.join.apply(path, parts)
-  console.log("%s: video_fqfn=%s", MODNAME, video_fqfn)
+  //console.log("%s: video_fqfn=%s", MODNAME, video_fqfn)
 
   var ext = path.extname(video_fqfn).toLowerCase().replace(/^\./, '')
   var vidstat, total
@@ -91,8 +76,8 @@ function streamVideo(req, res, next) {
     return
   }
 
-  console.log("%s: %s %s", MODNAME, req.method, req.url)
-  console.log("%s: headers =", MODNAME, util.inspect(req.headers))
+  //console.log("%s: %s %s", MODNAME, req.method, req.url)
+  //console.log("%s: headers =", MODNAME, util.inspect(req.headers))
 
   mimetype = ext2mimeType[ext]
   //console.log("%s: !!! ext=%s; mimetype=%s;", MODNAME, ext, mimetype)
@@ -122,12 +107,7 @@ function streamVideo(req, res, next) {
             , 'Content-Length': chunksize
             , 'Content-Type'  : mimetype
             })
-//    res.writeHead(206
-//                 , { 'Content-Range' : 'bytes ' + start + '-' + end + '/' + total
-//                   , 'Accept-Ranges' : 'bytes'
-//                   , 'Content-Length': chunksize
-//                   , 'Content-Type'  : mimetype
-//                   })
+
     file_rstream.pipe(res)
   }
   else {
