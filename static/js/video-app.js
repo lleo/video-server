@@ -82,7 +82,6 @@
   /*
    * Logging system. It BLOWS hard, but it used to SUCK worse.
    */
-  //var log = console.log
   var logLevel = 0 //default setting
   var logLevels = ['info', 'warn', 'crit', 'none', 'error']
   VideoApp.getLogLevel = function VideoApp_getLogLevel(level) {
@@ -148,7 +147,6 @@
     this.id = 'videoContents'
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.id)
-                //.addClass('videoContents')
                 .addClass('nocursor')
                 .append( videoApp.gVideoControls.$dom )
 
@@ -166,7 +164,6 @@
                             , self.initialLoad.subdirs
                             , self.initialLoad.file
                             , self.initialLoad.time )
-        //self.contents[0].$dom.focus()
       }, 0)
     }
 
@@ -194,7 +191,6 @@
       while (this.contents.length) {
         this.contents.pop().$dom.remove()
       }
-//      this._resetMouseState()
 
       var gVideoControls = this.videoApp.gVideoControls
       gVideoControls.reset()
@@ -281,8 +277,6 @@
         var gVideoControls = self.videoApp.gVideoControls
         var videoContents = self.videoApp.videoContents
 
-        if ( videoContents.contents.length < 0 ) return
-
         /* From https://api.jquery.com/keypress/
          *  e.type 'keypress'
          *  e.timeStamp Date.now()
@@ -358,7 +352,6 @@
               + "e.keyCode="+e.keyCode+" "
               + "char="+character
           info() && console.log(msg)
-          //alert(msg)
         }
       }
 
@@ -444,39 +437,6 @@
         setTimeout(throttleTimerFn, 50)
       } //end: onMouseMove()
 
-      // This was a test to see if there was any jQuery or Browser trottleing
-      // of 'mousemove' events.
-      //function onMouseMove(e) { //[test]
-      //  info() && console.log('onMouseMove: overControls = %o', overControls)
-      //
-      //  function hideBothTimerFn() {
-      //    info() && console.log('hideBothTimerFn: overControls = %o', overControls)
-      //    hideBothTimerId = undefined
-      //    if (!overControls) {
-      //      if ( !self.videoApp.gVideoControls.$dom.hasClass('hide') ) {
-      //        self.videoApp.gVideoControls.$dom.addClass('hide')
-      //      }
-      //      if ( !self.$dom.hasClass('nocursor') ) {
-      //        self.$dom.addClass('nocursor')
-      //      }
-      //    }
-      //  }
-      //
-      //  // mouse moved -> show controls
-      //  if ( self.videoApp.gVideoControls.$dom.hasClass('hide') ) {
-      //
-      //    self.videoApp.gVideoControls.$dom.removeClass('hide')
-      //  }
-      //
-      //  // mouse moved -> show cursor
-      //  if ( self.$dom.hasClass('nocursor') ) {
-      //
-      //    self.$dom.removeClass('nocursor')
-      //  }
-      //
-      //  clearTimeout(hideBothTimerId)
-      //  hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
-      //} //end: onMouseMove() [test]
       this.$dom.on('mousemove', onMouseMove)
 
       function onMouseEnter(e) {
@@ -492,18 +452,22 @@
 
   VideoContents.prototype.startBusy = function VideoContents__startBusy() {
     info() && console.log('VideoContents__startBusy:')
-    
-    if (this.contents.length) {
-      this.contents[0].startBusy()
+
+    var allStartBusy = true
+    for (var i=0; i<this.contents.length; i+=1) {
+      allStartBusy = !!this.contents[i].startBusy() && allStartBusy
     }
+    return allStartBusy
   }
 
   VideoContents.prototype.stopBusy = function VideoContents__stopBusy() {
     info() && console.log('VideoContents__stopBusy:')
-    
-    if (this.contents.length) {
-      this.contents[0].stopBusy()
+
+    var allStopBusy = true
+    for (var i=0; i<this.contents.length; i+=1) {
+      allStopBusy = !!this.contents[0].stopBusy() && allStopBusy
     }
+    return allStopBusy
   }
   
   VideoContents.prototype.isPaused = function VideoContents__isPaused() {
@@ -514,11 +478,10 @@
       allPaused = this.allPaused()
       if (firstPaused && !allPaused) {
         console.error('VideoContents__isPaused: firstPaused && !allPaused')
-        return firstPaused
       }
       return allPaused
     }
-    return
+    return //I really don't know what to return when there are no contents
   }
 
   VideoContents.prototype.allPaused = function VideoContents__allPaused() {
@@ -564,7 +527,7 @@
       'use strict';
       var allSet = true
       for (var i=0; i<this.contents.length; i+=1) {
-        allSet = this.contents[i].setPosition(fsecs) && allSet
+        allSet = !!this.contents[i].setPosition(fsecs) && allSet
       }
       return allSet
     }
@@ -573,7 +536,7 @@
     'use strict';
     var allSeeked = true
     for (var i=0; i<this.contents.length; i+=1) {
-      allSeeked = this.contents[i].seek(nsecs) && allSeeked
+      allSeeked = !!this.contents[i].seek(nsecs) && allSeeked
     }
     return allSeeked
   }
@@ -589,7 +552,7 @@
 
     var allSetVolume = true
     for (var i=0; i<this.contents.length; i+=1) {
-      allSetVolume = this.contents[i].setVolume(pct) && allSetVolume
+      allSetVolume = !!this.contents[i].setVolume(pct) && allSetVolume
     }
     return allSetVolume
   } //end: VideoContents__setVolume()
@@ -642,6 +605,8 @@
     var url = window.location.origin + window.location.pathname + "?" + qstr
 
     history.pushState(state, null, url)
+
+    return this
   } //end: VideoContents__setMark()
 
   function VideoContent( vidNum, root, subdirs, file
@@ -677,7 +642,6 @@
      * Create the video DOM element. Start with the SourceElement first
      */
     var parts = ['/stream', root]
-    //if (subdirs.length) parts.push( subdirs.join('/') )
     parts = parts.concat(subdirs)
     parts.push(file)
     
@@ -687,7 +651,7 @@
     var mimetype = determineMimetype(file)
     if (!mimetype) {
       console.error("VideoContent: !!!ERROR!!! Unknown mimetype for file="+file)
-      mimetype = 'video/mp4' //just for shits-n-giggles
+      mimetype = 'video/mp4' //FIXME: just for shits-n-giggles
     }
 
     var $source = $( document.createElement('source') )
@@ -740,8 +704,6 @@
     if (this._eventsSetup) return
     
     this._setupVideoEvents()
-    //this._setupMouseEvents()
-    //this._setupKeyboardEvents()
 
     this._eventsSetup = true
   }
@@ -761,7 +723,6 @@
       if (this._eventsSetup) return
 
       var $video = this.$video
-      //var gVideoControls = this.videoApp.gVideoControls
       
       var self = this
 
@@ -856,8 +817,6 @@
       $video.on('ended', function onEnded(e){
         info() && console.log("onEnded: e.target.id=%s", e.target.id)
 
-
-        //var $play = self.videoApp.gVideoControls.$play
         var $playSym = self.videoApp.gVideoControls.$playSym
         
         if ($playSym.hasClass('fa-pause')) {
@@ -895,6 +854,8 @@
       info() && console.log('VideoContent__startBusy: removing "hide" class to $spinner')
       this.$spinner.removeClass('hide')
     }
+
+    return this
   }
 
   VideoContent.prototype.stopBusy = function VideoContent__stopBusy() {
@@ -912,6 +873,8 @@
       info() && console.log('VideoContent__stopBusy: adding "hide" class to $spinner')
       this.$spinner.addClass('hide')
     }
+
+    return this
   }
   
   VideoContent.prototype.fullscreenChanged =
@@ -941,8 +904,8 @@
         $fullscreenSym.removeClass('fa-compress')
         $fullscreenSym.addClass('fa-arrows-alt')
       }
-      return
-    }
+      return true
+    } //end: VideoContent__fullscreenChanged()
   
   VideoContent.prototype.cssCenterSpinner =
     function VideoContent__cssCenterSpinner() {
@@ -959,9 +922,9 @@
 
   VideoContent.prototype.togglePlay = function VideoContent__togglePlay() {
     if ( this.isPaused() )
-      return this.play()   //true on play?
+      return this.play()
     else
-      return !this.pause() //false on pause?
+      return this.pause()
   }
   
   VideoContent.prototype.play = function VideoContent__play() {
@@ -982,14 +945,14 @@
 
       this.$video[0].currentTime = fsecs
 
-      return true
+      return this
     }
 
   VideoContent.prototype.seek = function VideoContent__seek(nsecs) {
     info() && console.log('VideoContent__seek: nsecs = %d', nsecs)
     var newTime = this.$video[0].currentTime + nsecs
     this.setPosition(newTime)
-    return true
+    return this
   }
 
   VideoContent.prototype.setVolume = function VideoContent__setVolume(pct) {
@@ -1002,7 +965,7 @@
     
     this.$video[0].volume = pct / 100
 
-    return true
+    return this
   }
 
   VideoContent.prototype.isFullscreen =
@@ -1012,10 +975,6 @@
 
   VideoContent.prototype.toggleFullscreen =
     function VideoContent__toggleFullscreen() {
-      //$(document).on('webkitfullscreenchange '
-      //              +'mozfullscreenchange '
-      //              +'fullscreenchange '
-      //              +'MSFullscreenChange', fn);
       if ( !this.isFullscreen() ) {
         //var el = this.$video[0]
         var el = this.$dom[0]
@@ -1036,12 +995,13 @@
           el.webkitRequestFullscreen()
         }
         else {
-          warn() && console.log('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
+          console.error('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
           alert("requestFullScreen not implemented by this browser")
-          return
+          return false
         }
         this.cssCenterSpinner()
-        return this._isFullscreen = true
+        this._isFullscreen = true
+        return true
       }
       else {
         // try to cancel fullscreen
@@ -1062,11 +1022,12 @@
           document.webkitCancelFullScreen()
         }
         else {
-          warn() && console.log('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
+          console.error('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
           alert('cancelFullScreen not implemented by this browser')
-          return
+          return false
         }
-        return this._isFullscreen = false
+        this._isFullscreen = false
+        return true
       }
       return
     } //end: VideoContent__toggleFullscreen()
@@ -1075,7 +1036,6 @@
 
   function GlobalVideoControls(_cfg, videoApp) {
     this.videoApp = videoApp
-    //this.videoContents = videoApp.videoContents
     var cfg = _.cloneDeep(_cfg) || {}
     
     this.skipBackSecs = cfg.skipBackSecs || 10
@@ -1407,7 +1367,6 @@
     }
 
     this.$flexWrapper.append( this.$mark )
-    //this.enable()
   } //end: GlobalVideoControls()
 
   GlobalVideoControls.prototype.setPosition =
@@ -1421,13 +1380,10 @@
       var videoContents, $dom, $controls, offset
       
       videoContents = this.videoApp.videoContents
-      if ( videoContents.contents.length ) {
-        //grab the first $dom where the controls are under
-        $dom = videoContents.$dom
-        $controls = $('#gVideoControls')
-        offset = ($dom.width()/2) - ($controls.width()/2)
-        $controls.css({top: 10, left: offset})
-      }
+      $dom = videoContents.$dom
+      $controls = $('#gVideoControls')
+      offset = ($dom.width()/2) - ($controls.width()/2)
+      $controls.css({top: 10, left: offset})
     }
 
   GlobalVideoControls.prototype.setVolume =
@@ -1580,7 +1536,6 @@
 
     this.$dom = $(document.createElement('div'))
                 .attr('id', this.ids.div)
-                //.addClass('rootSelector') //FIXME: delete this
 
     var $rootSelect = $(document.createElement('select'))
                       .attr('id', this.ids.select)
@@ -1599,7 +1554,6 @@
 
     this.$dom.append( $(document.createElement('div'))
                       .attr('id', this.ids.wrapDiv)
-                      //.addClass('wrapRootSelect') //FIXME: delete this
                       .append( this.$rootSelect )
                     )
 
