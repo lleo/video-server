@@ -12,11 +12,11 @@
     this._eventsSetup = false
 
     this.debug = cfg.debug || 'info'
-    info() && console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
+    warn() && console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
     VideoApp.setLogLevel(this.debug)
 
-    var gVideoControls = new GlobalVideoControls(cfg['controls config'], this)
-    this.gVideoControls = gVideoControls
+    var globalVideoControls = new GlobalVideoControls(cfg['controls config'], this)
+    this.globalVideoControls = globalVideoControls
 
     var videoContents = new VideoContents(cfg['load'], this)
     this.videoContents = videoContents
@@ -148,7 +148,7 @@
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.id)
                 .addClass('nocursor')
-                .append( videoApp.gVideoControls.$dom )
+                .append( videoApp.globalVideoControls.$dom )
 
     this.contents = [] //array of VideoContent objects
     this._isFullscreen = false
@@ -192,8 +192,8 @@
         this.contents.pop().$dom.remove()
       }
 
-      var gVideoControls = this.videoApp.gVideoControls
-      gVideoControls.reset()
+      var globalVideoControls = this.videoApp.globalVideoControls
+      globalVideoControls.reset()
 
       var vidNum = this.contents.length
 
@@ -274,7 +274,7 @@
 
       function onKeyPress(e) {
         info() && console.log('onKeyPress: called e =', e)
-        var gVideoControls = self.videoApp.gVideoControls
+        var globalVideoControls = self.videoApp.globalVideoControls
         var videoContents = self.videoApp.videoContents
 
         /* From https://api.jquery.com/keypress/
@@ -317,32 +317,32 @@
          case 'p':
          case ' ':
           info() && console.log("onKeyPress: '%s' pressed; $play.click()", character)
-          gVideoControls.$play.click()
+          globalVideoControls.$play.click()
           break;
 
          case 's':
           info() && console.log("onKeyPress: 's' pressed; $skip.click()")
-          gVideoControls.$skip.click()
+          globalVideoControls.$skip.click()
           break;
 
          case 'S':
           info() && console.log("onKeyPress: 'S' pressed; long skip")
-          videoContents.seek( gVideoControls.skipForwSecs * 3 )
+          videoContents.seek( globalVideoControls.skipForwSecs * 3 )
           break;
 
          case 'b':
           info() && console.log("onKeyPress: 's' pressed; $back.click()")
-          gVideoControls.$back.click()
+          globalVideoControls.$back.click()
           break;
 
          case 'B':
           info() && console.log("onKeyPress: 'B' pressed; long back")
-          videoContents.seek( -(gVideoControls.skipBackSecs * 3) )
+          videoContents.seek( -(globalVideoControls.skipBackSecs * 3) )
           break;
 
          case 'F':
           info() && console.log("onKeyPress: 'F' pressed; $fullscreen.click()")
-          gVideoControls.$fullscreen.click()
+          globalVideoControls.$fullscreen.click()
           break;
 
          default:
@@ -383,7 +383,7 @@
         //   - show controls & cursor & start throttling the 'mousemove' events
         // 1 - if 2000ms after the first throttle timer has fired,
         //     then hide the controls & cursor
-        var gVideoControls = self.videoApp.gVideoControls
+        var globalVideoControls = self.videoApp.globalVideoControls
 
         // Given that every time 50ms after a 'mousemove' event we disable
         // and then reenable this timer function for 2000ms,
@@ -393,8 +393,8 @@
           // NOTE: The variable overControls is a boolean that is set true
           // by the 'mouseenter' and false by the 'mouseleave' events
           // See the onMouse{Enter,Leave} functions declared below.
-          if (!ms.overControls && !gVideoControls.$dom.hasClass('hide'))
-            gVideoControls.$dom.addClass('hide')
+          if (!ms.overControls && !globalVideoControls.$dom.hasClass('hide'))
+            globalVideoControls.$dom.addClass('hide')
 
           if (!ms.overControls && !self.$dom.hasClass('nocursor'))
             self.$dom.addClass('nocursor')
@@ -424,8 +424,8 @@
         self.$dom.off('mousemove', onMouseMove)
 
         // mouse moved -> show controls
-        if ( gVideoControls.$dom.hasClass('hide') ) {
-          gVideoControls.$dom.removeClass('hide')
+        if ( globalVideoControls.$dom.hasClass('hide') ) {
+          globalVideoControls.$dom.removeClass('hide')
         }
 
         // mouse moved -> show cursor
@@ -445,8 +445,8 @@
       function onMouseLeave(e) {
         ms.overControls = false
       }
-      this.videoApp.gVideoControls.$dom.on('mouseenter', onMouseEnter)
-      this.videoApp.gVideoControls.$dom.on('mouseleave', onMouseLeave)
+      this.videoApp.globalVideoControls.$dom.on('mouseenter', onMouseEnter)
+      this.videoApp.globalVideoControls.$dom.on('mouseleave', onMouseLeave)
 
     } //end: VideoContents___setupMouseEvents()
 
@@ -609,6 +609,7 @@
     return this
   } //end: VideoContents__setMark()
 
+
   function VideoContent( vidNum, root, subdirs, file
                        , initTime, videoApp ) {
     info() && console.log('VideoContent() constructor')
@@ -745,16 +746,16 @@
             , self.videoWidth, self.videoHeight)
 
         info() && console.log('onLoadedData: self.$video[0].duration = %f', self.$video[0].duration)
-        var gVideoControls = self.videoApp.gVideoControls
+        var globalVideoControls = self.videoApp.globalVideoControls
 
         if (0 == self.vidNum) {
-          //if ( !gVideoControls.isEnabled() ) gVideoControls.enable()
-          gVideoControls.$positionRng[0].max = self.$video[0].duration
+          //if ( !globalVideoControls.isEnabled() ) globalVideoControls.enable()
+          globalVideoControls.$positionRng[0].max = self.$video[0].duration
         }
 
         if (self.initTime) {
           console.log('onLoadedData: self.initTime = %f', self.initTime)
-          if (0 == self.vidNum) gVideoControls.setPosition(self.initTime)
+          if (0 == self.vidNum) globalVideoControls.setPosition(self.initTime)
           self.setPosition(self.initTime)
         }
         
@@ -778,9 +779,9 @@
                              , self.$video[0].readyState
                              , self.canPlay)
 
-        var gVideoControls = self.videoApp.gVideoControls
-        if ( !gVideoControls.isEnabled() ) gVideoControls.enable()
-        gVideoControls.cssPositionControls()
+        var globalVideoControls = self.videoApp.globalVideoControls
+        if ( !globalVideoControls.isEnabled() ) globalVideoControls.enable()
+        globalVideoControls.cssPositionControls()
         self.cssCenterSpinner()
       })
       
@@ -809,15 +810,15 @@
       })
 
       $video.on('timeupdate', function onTimeUpdate(e){
-        var gVideoControls = self.videoApp.gVideoControls
-        gVideoControls.$positionRng[0].value = e.target.currentTime
-        gVideoControls.$positionNum[0].value = Math.floor(e.target.currentTime)
+        var globalVideoControls = self.videoApp.globalVideoControls
+        globalVideoControls.$positionRng[0].value = e.target.currentTime
+        globalVideoControls.$positionNum[0].value = Math.floor(e.target.currentTime)
       })
 
       $video.on('ended', function onEnded(e){
         info() && console.log("onEnded: e.target.id=%s", e.target.id)
 
-        var $playSym = self.videoApp.gVideoControls.$playSym
+        var $playSym = self.videoApp.globalVideoControls.$playSym
         
         if ($playSym.hasClass('fa-pause')) {
           $playSym.removeClass('fa-pause')
@@ -841,11 +842,11 @@
 
   VideoContent.prototype.startBusy = function VideoContent__startBusy() {
     info() && console.log('VideoContent__startBusy:')
-    var gVideoControls = this.videoApp.gVideoControls
+    var globalVideoControls = this.videoApp.globalVideoControls
 
     if (0 == this.vidNum) {
       //disable the controls
-      gVideoControls.disable()
+      globalVideoControls.disable()
     }
 
     //remove the hide class from the $spinner
@@ -860,11 +861,11 @@
 
   VideoContent.prototype.stopBusy = function VideoContent__stopBusy() {
     info() && console.log('VideoContent__stopBusy:')
-    var gVideoControls = this.videoApp.gVideoControls
+    var globalVideoControls = this.videoApp.globalVideoControls
 
     if (0 == this.vidNum) {
       //enable the controls
-      gVideoControls.enable()
+      globalVideoControls.enable()
     }
 
     //add the hide class from the $spinner
@@ -879,8 +880,8 @@
   
   VideoContent.prototype.fullscreenChanged =
     function VideoContent__fullscreenChanged(e) {
-      var gVideoControls = this.videoApp.gVideoControls
-      var $fullscreenSym = gVideoControls.$fullscreenSym
+      var globalVideoControls = this.videoApp.globalVideoControls
+      var $fullscreenSym = globalVideoControls.$fullscreenSym
 
       var self = this
 
@@ -893,7 +894,7 @@
        */
       setTimeout(function() {
         self.cssCenterSpinner()
-        gVideoControls.cssPositionControls()
+        globalVideoControls.cssPositionControls()
       }, 500)
       
       if ( $fullscreenSym.hasClass('fa-arrows-alt') ) {
@@ -1033,7 +1034,6 @@
     } //end: VideoContent__toggleFullscreen()
 
 
-
   function GlobalVideoControls(_cfg, videoApp) {
     this.videoApp = videoApp
     var cfg = _.cloneDeep(_cfg) || {}
@@ -1043,7 +1043,7 @@
 
     this._enabled = false
 
-    this.ids = { div           : 'gVideoControls'
+    this.ids = { div           : 'globalVideoControls'
                , flexWrapper   : 'flexWrapper'
                , playSym       : 'playSym'
                , pauseSym      : 'pauseSym'
@@ -1381,7 +1381,7 @@
       
       videoContents = this.videoApp.videoContents
       $dom = videoContents.$dom
-      $controls = $('#gVideoControls')
+      $controls = $('#globalVideoControls')
       offset = ($dom.width()/2) - ($controls.width()/2)
       $controls.css({top: 10, left: offset})
     }
