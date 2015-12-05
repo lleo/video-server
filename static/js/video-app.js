@@ -115,7 +115,7 @@
     //don't even know if this is necessary
     return true
   }
-  
+
   {
     var ext2mimetype = { 'webm': 'video/webm'
                        , 'mp4' : 'video/mp4'
@@ -175,7 +175,7 @@
     // of this.contents[0].getState() if it exists, else undefined.
     return this.contents.length ? this.contents[0].getState() : undefined
   } //end: VideoContents__getState()
-  
+
   VideoContents.prototype.addVideoContent =
     function VideoContents__addVideoContent(root, subdirs, file, initTime) {
       'use strict';
@@ -469,7 +469,7 @@
     }
     return allStopBusy
   }
-  
+
   VideoContents.prototype.isPaused = function VideoContents__isPaused() {
     var firstPaused, allPaused
     if (this.contents.length) {
@@ -531,7 +531,7 @@
       }
       return allSet
     }
-  
+
   VideoContents.prototype.seek = function VideoContents__seek(nsecs) {
     'use strict';
     var allSeeked = true
@@ -557,7 +557,7 @@
     function VideoContents__isFullscreen() {
       return this._isFullscreen
     }
-  
+
 //  VideoContents.prototype.toggleFullscreen =
 //    function VideoContents__toggleFullscreen() {
 //      'use strict';
@@ -701,10 +701,10 @@
     var parts = ['/stream', root]
     parts = parts.concat(subdirs)
     parts.push(file)
-    
+
     var rawUri = parts.join('/')
     var uri = encodeURI(rawUri)
-    
+
     var mimetype = determineMimetype(file)
     if (!mimetype) {
       console.error("VideoContent: !!!ERROR!!! Unknown mimetype for file="+file)
@@ -780,7 +780,7 @@
       if (this._eventsSetup) return
 
       var $video = this.$video
-      
+
       var self = this
 
       $video.on('loadeddata', function onLoadedData(e) {
@@ -814,7 +814,7 @@
           if (0 == self.vidNum) globalVideoControls.setPosition(self.initTime)
           self.setPosition(self.initTime)
         }
-        
+
       })
 
       //HTMLMediaElement Constant
@@ -840,7 +840,7 @@
         globalVideoControls.cssPositionControls()
         self.cssCenterSpinner()
       })
-      
+
       $video.on('playing', function onPlaying(e){
         info() && console.log("onPlaying: e.target.id=%s", e.target.id)
       })
@@ -857,7 +857,7 @@
 
         self.stopBusy()
       })
-      
+
       $video.on('seeking', function onSeeking(e){
         info() && console.log("onSeeking: e.target.id=%s", e.target.id)
         info() && console.log('onSeeking: calling self<VideoContent>.startBusy()')
@@ -875,7 +875,7 @@
         info() && console.log("onEnded: e.target.id=%s", e.target.id)
 
         var $playSym = self.videoApp.globalVideoControls.$playSym
-        
+
         if ($playSym.hasClass('fa-pause')) {
           $playSym.removeClass('fa-pause')
           $playSym.addClass('fa-play')
@@ -933,7 +933,7 @@
 
     return this
   }
-  
+
   VideoContent.prototype.fullscreenChanged =
     function VideoContent__fullscreenChanged(e) {
       var globalVideoControls = this.videoApp.globalVideoControls
@@ -963,7 +963,7 @@
       }
       return true
     } //end: VideoContent__fullscreenChanged()
-  
+
   VideoContent.prototype.cssCenterSpinner =
     function VideoContent__cssCenterSpinner() {
       var $spinner = this.$spinner
@@ -972,7 +972,7 @@
       var offset_y = ($dom.height()/2)-($spinner.height()/2)
       $spinner.css({top: offset_y, left: offset_x})
     }
-  
+
   VideoContent.prototype.isPaused = function VideoContent__isPaused() {
     return this.$video[0].paused
   }
@@ -983,7 +983,7 @@
     else
       return this.pause()
   }
-  
+
   VideoContent.prototype.play = function VideoContent__play() {
     if ( this.isPaused() )
       this.$video[0].play()
@@ -1019,7 +1019,7 @@
     }
     if (pct < 0) pct = 0
     if (pct > 100) pct = 100
-    
+
     this.$video[0].volume = pct / 100
 
     return this
@@ -1163,10 +1163,10 @@
                  .attr('id', this.ids.playDiv)
                  .addClass('control')
                  .append( this.$playSym )
-    
+
     this.onPlayClickFn = function onPlayClick(e) {
       var videoContents = self.videoApp.videoContents
-      
+
       info() && console.log('onPlayClick: videoContents.isPaused() = %o', videoContents.isPaused())
       if ( videoContents.isPaused() ) {
         info() && console.log('onPlayClick: calling videoContents.play()')
@@ -1181,7 +1181,7 @@
         self.$playSym.addClass('fa-play')
       }
     }
-    
+
     this.$flexWrapper.append( this.$play )
 
 
@@ -1192,7 +1192,7 @@
                     .attr('id', this.ids.skipSym)
                     .addClass('fa')
                     .addClass('fa-step-forward')
-    
+
     this.$skip = $( document.createElement('div') )
                  .attr('id', this.ids.skipDiv)
                  .addClass('control')
@@ -1203,7 +1203,7 @@
       var videoContents = self.videoApp.videoContents
       videoContents.seek(self.skipForwSecs)
     }
-    
+
     this.$flexWrapper.append( this.$skip )
 
     /***************
@@ -1213,7 +1213,7 @@
                     .attr('id', this.ids.backSym)
                     .addClass('fa')
                     .addClass('fa-step-backward')
-    
+
     this.$back = $( document.createElement('div') )
                  .attr('id', this.ids.backDiv)
                  .addClass('control')
@@ -1282,7 +1282,7 @@
                          .attr('id', this.ids.volumeSymDiv)
                          .append( this.$volumeSym )
 
-    
+
     this.onVolumeSymClickFn = function onVolumeSymClick(e) {
       var videoEl
       var videoContents = self.videoApp.videoContents
@@ -1293,7 +1293,7 @@
         console.error('onVolumeSymClick: videoContents.contents.length = 0')
         return
       }
-      
+
       info() && console.log('onVolumeSymClick: before volume = %f', videoEl.volume)
       if (videoEl.muted) {
         videoEl.muted = false
@@ -1309,7 +1309,6 @@
             self.$volumeSym.addClass('fa-volume-up')
           }
         }
-        
       }
       else { //volume on
         videoEl.muted = true
@@ -1325,7 +1324,6 @@
         self.$volumeSym.addClass('fa-volume-off')
         return
       }
-      
     } //end: onVolumeSymClick()
 
     this.$volumeRng = $( document.createElement('input') )
@@ -1351,7 +1349,7 @@
                    .addClass('control')
                    .append( this.$volumeSymDiv )
                    .append( this.$volumeRng )
-    
+
 
     this.$flexWrapper.append( this.$volume )
 
@@ -1434,7 +1432,7 @@
   GlobalVideoControls.prototype.cssPositionControls =
     function GlobalVideoControls__cssPositionControls() {
       var videoContents, $dom, $controls, offset
-      
+
       videoContents = this.videoApp.videoContents
       $dom = videoContents.$dom
       $controls = $('#globalVideoControls')
@@ -1480,7 +1478,7 @@
         this.$playSym.addClass('fa-play')
       }
     }
-  
+
   GlobalVideoControls.prototype.reset =
     function GlobalVideoControls__reset() {
     if ( this.isEnabled() ) this.disable()
@@ -1497,7 +1495,7 @@
     function GlobalVideoControls__isEnabled() {
       return this._enabled
     }
-  
+
   GlobalVideoControls.prototype.enable = function GlobalVideoControls__enable() {
     info() && console.log('GlobalVideoControls__enable: this._enabled = %o', this._enabled)
     if ( this.isEnabled() ) {
@@ -1561,7 +1559,6 @@
     } //end: GlobalVideoControls__disable()
 
   function PerVideoControls(_cfg, videoContent, videoApp) {
-    
   }
 
 
@@ -1573,7 +1570,7 @@
                , select: 'rootBrowserSelect'
                , wrapDiv: 'rootBrowserSelectWrapDiv'
                }
-    
+
     this.rootNames    = rootNames
     this.selectedRoot = undefined
     this.subdirs        = []
@@ -1614,7 +1611,7 @@
       info() && console.log('FileBrowser: selectChanged: val = '+JSON.stringify(val))
 
       self.selectedRoot = val
-      
+
       if (self.dirSelects.length > 0) {
         //reset the DOM
         while (self.dirSelects.length > 0) {
@@ -1641,7 +1638,6 @@
                       , subdirs : self.subdirs
                       }
              , success : readdirSuccess
-
              })
     } //end: selectChanged()
 
@@ -1662,7 +1658,7 @@
 
     this._eventsSetup = true
   }
-  
+
   FileBrowser.prototype._setupKeyboardEvents =
     function FileBrowser___setupKeyboardEvents() {
       if (this._eventsSetup) return
@@ -1797,7 +1793,7 @@
                            )
       var root = this.selectedRoot
       var subdirs = _.clone(this.subdirs)
-      
+
       //add addVideoContentButton
       this.addVideoContentButton = new LaunchVideoContentButton(file)
 
@@ -1821,7 +1817,7 @@
     this._eventsSetup  = false
 
     var size = dirs.length + files.length
-    
+
     this.ids = { div    : 'fileSelectorDiv-'+dirNum
                , wrapDiv: 'dirWrapDiv-'+dirNum
                , select : 'dirSelect-'+dirNum
@@ -1943,15 +1939,12 @@
   function LaunchVideoContentButton(file) {
     this.file    = file
     this.id = 'launchButton'
-    
-
     this.$dom = $( document.createElement('button') )
                 .attr('type', 'button')
                 .attr('id', this.id)
                 .attr('value', file)
                 .addClass('launchButton')
                 .append(file)
-
   } //end: LaunchVideoConentButton()
 
   window.VideoApp = VideoApp
