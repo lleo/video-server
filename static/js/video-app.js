@@ -558,38 +558,98 @@
       return this._isFullscreen
     }
   
+//  VideoContents.prototype.toggleFullscreen =
+//    function VideoContents__toggleFullscreen() {
+//      'use strict';
+//      if (this.contents.length > 1) {
+//        /* Only fullScreen the first one for now
+//         *
+//         * I'm gonna want to arrange screens thus:
+//         * +------------------+
+//         * |                  |
+//         * |                  |
+//         * |                  |
+//         * +------------------+
+//         *               +------------------+
+//         *               |                  |
+//         *               |                  |
+//         *               |                  |
+//         *               +------------------+
+//         * +------------------+
+//         * |                  |
+//         * |                  |
+//         * |                  |
+//         * +------------------+
+//         */
+//        console.error('VideoContents__toggleFullscreen: not supported for this.contents.length > 1')
+//        return
+//      }
+//      else if (this.contents.length == 1) {
+//        return this._isFullscreen = this.contents[0].toggleFullscreen()
+//      }
+//      else {
+//        console.error('VideoContents__toggleFullscreen: no video contents this.contents.length < 1')
+//        return
+//      }
+//    } //end: VideoContents__toggleFullscreen()
+
   VideoContents.prototype.toggleFullscreen =
-    function VideoContents__toggleFullscreen() {
-      'use strict';
-      if (this.contents.length > 1) {
-        /* Only fullScreen the first one for now
-         *
-         * I'm gonna want to arrange screens thus:
-         * +------------------+
-         * |                  |
-         * |                  |
-         * |                  |
-         * +------------------+
-         *               +------------------+
-         *               |                  |
-         *               |                  |
-         *               |                  |
-         *               +------------------+
-         * +------------------+
-         * |                  |
-         * |                  |
-         * |                  |
-         * +------------------+
-         */
-        console.error('VideoContents__toggleFullscreen: not supported for this.contents.length > 1')
-        return
+    function VideoContent__toggleFullscreen() {
+      if ( !this.isFullscreen() ) {
+        //var el = this.$video[0]
+        var el = this.$dom[0]
+        if (el.requestFullscreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used requestFullscreen')
+          el.requestFullscreen()
+        }
+        else if (el.msRequestFullscreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used msRequestFullscreen')
+          el.msRequestFullscreen()
+        }
+        else if (el.mozRequestFullScreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used mozRequestFullScreen')
+          el.mozRequestFullScreen()
+        }
+        else if (el.webkitRequestFullscreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
+          el.webkitRequestFullscreen()
+        }
+        else {
+          console.error('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
+          alert("requestFullScreen not implemented by this browser")
+          return false
+        }
+        this.cssCenterSpinner()
+        this._isFullscreen = true
+        return true
       }
-      else if (this.contents.length == 1)
-        return this._isFullscreen = this.contents[0].toggleFullscreen()
       else {
-        console.error('VideoContents__toggleFullscreen: no video contents this.contents.length < 1')
-        return
+        // try to cancel fullscreen
+        if (document.cancelFullScreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used document.cancelFullScreen')
+          document.cancelFullScreen()
+        }
+        else if (document.msExitFullscreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used document.msExitFullscreen')
+          document.msExitFullscreen()
+        }
+        else if (document.mozCancelFullScreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
+          document.mozCancelFullScreen()
+        }
+        else if (document.webkitCancelFullScreen) {
+          info() && console.log('VideoContent__toggleFullscreen: used document.webkitCancelFullScreen')
+          document.webkitCancelFullScreen()
+        }
+        else {
+          console.error('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
+          alert('cancelFullScreen not implemented by this browser')
+          return false
+        }
+        this._isFullscreen = false
+        return true
       }
+      return
     } //end: VideoContents__toggleFullscreen()
 
   VideoContents.prototype.setMark = function VideoContents__setMark() {
