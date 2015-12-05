@@ -543,10 +543,6 @@
 
   VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
     'use strict';
-    if (pct > 0 && pct < 1) {
-      console.error('VideoContents__setVolume: pct > 0 && pct < 1')
-      return
-    }
     if (pct < 0) pct = 0
     if (pct > 100) pct = 100
 
@@ -1504,19 +1500,11 @@
       this._enabled = false
     } //end: GlobalVideoControls__disable()
 
-  VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
-    'use strict';
-    if (pct < 0) pct = 0
-    if (pct > 100) pct = 100
-    info() && console.log('VideoContents__setVolume: pct = %d', pct)
-
-    var allVolumeSet = true
-    for (var i=0; i<this.contents.length; i+=1) {
-      allVolumeSet = this.contents[i].setVolume(pct) && allVolumeSet
-    }
-    return allVolumeSet
+  function PerVideoControls(_cfg, videoContent, videoApp) {
+    
   }
-  
+
+
   function FileBrowser(rootNames, videoApp) {
     /* rootNames = [ name_1, name_2, ..., name_n]
      */
