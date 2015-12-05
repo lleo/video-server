@@ -619,7 +619,7 @@
           alert("requestFullScreen not implemented by this browser")
           return false
         }
-        this.cssCenterSpinner()
+        this.cssCenterSpinners()
         this._isFullscreen = true
         return true
       }
@@ -651,6 +651,16 @@
       }
       return
     } //end: VideoContents__toggleFullscreen()
+
+  VideoContents.prototype.cssCenterSpinners =
+    function VideoContents__cssCenterSpinners() {
+      'use strict';
+      var allCssCenterSpinner = true
+      for (var i=0; i<this.contents.length; i+=1) {
+        allCssCenterSpinner = !!this.contents[i].cssCenterSpinner() && allCssCenterSpinner
+      }
+      return allCssCenterSpinner
+    } //end: VideoContents__cssCenterSpinners()
 
   VideoContents.prototype.setMark = function VideoContents__setMark() {
     if (!this.contents.length) return
@@ -971,6 +981,7 @@
       var offset_x = ($dom.width()/2)-($spinner.width()/2)
       var offset_y = ($dom.height()/2)-($spinner.height()/2)
       $spinner.css({top: offset_y, left: offset_x})
+      return this
     }
 
   VideoContent.prototype.isPaused = function VideoContent__isPaused() {
