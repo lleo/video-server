@@ -160,10 +160,28 @@
     if (this.initialLoad) {
       var self = this
       setTimeout(function() {
-        self.addVideoContent( self.initialLoad.root
-                            , self.initialLoad.subdirs
-                            , self.initialLoad.file
-                            , self.initialLoad.time )
+        'use strict';
+        function sortfn(a,b) {
+          var ai = parseInt(a.match(/^video-(\d+)/)[1], 10)
+          var bi = parseInt(b.match(/^video-(\d+)/)[1], 10)
+          if (isNaN(ai)) {
+            console.error('initialLoad: sortfn: isNaN(ai)')
+            return 0
+          }
+          if (isNaN(bi)) {
+            console.error('initialLoad: sortfn: isNaN(bi)')
+            return 0
+          }
+          if (ai === bi) return 0
+          if (ai < bi) return -1
+          if (ai > bi) return 1
+        }
+        for (var key of Object.keys(self.initialLoad).sort(sortfn)) {
+          self.addVideoContent( self.initialLoad[key].root
+                              , self.initialLoad[key].subdirs
+                              , self.initialLoad[key].file
+                              , self.initialLoad[key].time )
+        }
       }, 0)
     }
 
@@ -665,11 +683,17 @@
   VideoContents.prototype.setMark = function VideoContents__setMark() {
     if (!this.contents.length) return
 
-    var state = _.cloneDeep(this.contents[0].state)
+    var state = {}
+    for (var i=0; i<this.contents.length; i+=1) {
+      state['video-'+i] = _.cloneDeep(this.contents[i].state)
+    }
     var qstr = $.param( state )
 
     var url = window.location.origin + window.location.pathname + "?" + qstr
 
+    console.log('VideoContents__setMark: state = %o', state)
+    console.log('VideoContents__setMark: url = %s', url)
+    
     history.pushState(state, null, url)
 
     return this
@@ -1404,31 +1428,9 @@
     this.onMarkClickFn = function onMarkClick(e) {
       info() && console.log('onMarkClick: called')
 
-      var videoContent = self.videoApp.videoContents.contents[0]
-      var root    = videoContent.root
-      var subdirs = videoContent.subdirs
-      var file    = videoContent.file
-      var time    = Math.floor(videoContent.$video[0].currentTime)
+      var videoContents = self.videoApp.videoContents
+      videoContents.setMark()
 
-      var q = { "root"    : root
-              , "subdirs" : subdirs
-              , "file"    : file
-              , "time"    : time
-              }
-      var qstr = $.param( q )
-
-      var url = window.location.origin + window.location.pathname + "?" + qstr
-
-      info() && console.log('onMarkClick: window.location.origin = %s', window.location.origin)
-      info() && console.log('onMarkClick: window.location.pathname = %s', window.location.pathname)
-      info() && console.log('onMarkClick: q = %o', q)
-      info() && console.log('onMarkClick: qstr = %s', qstr)
-      info() && console.log('onMarkClick: url = %s', url)
-
-      var state = _.cloneDeep(videoContent.state)
-      info() && console.log('onMarkClick: state = %o', state)
-
-      history.pushState(state, null, url)
     }
 
     this.$flexWrapper.append( this.$mark )

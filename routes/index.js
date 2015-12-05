@@ -49,46 +49,54 @@ module.exports = function(req, res, next){
   //console.log('%s: req.query = %j', MODNAME, req.query)
 
   var queryOk = (function checkQuery() {
-    var load = {}
-    var root, subdirs, file, time
     var rootNames = cfg['video root names']
     //console.log('%s: checkQuery: req.query == trueish', MODNAME)
-    //console.log('%s: checkQuery: req.query:\n%s', MODNAME
-    //           , util.inspect(req.query, {depth:null,colors:true}))
-    if ( !Object.keys(req.query).length ) {
+    console.log('%s: checkQuery: req.query:\n%s', MODNAME
+               , util.inspect(req.query, {depth:null,colors:true}))
+
+    var keys = Object.keys(req.query)
+    if ( !keys.length ) {
       console.log('%s: checkQuery: req.query has no keys; fine, skipping the rest of checkQuery.', MODNAME)
       return true
     }
 
-    root = req.query.root
-    if (!root) return false
-    if ( !rootNames.some(function(e){ return e == root }) ) return false
-    load.root = root
+    var load = {}
+    var root, subdirs, file, time
+    for (let key of keys) {
+      let entry = {}
 
-    subdirs = req.query.subdirs
-    if (!subdirs) return false
-    if (!u.isArray(subdirs)) return false
-    if ( !subdirs.every(isNonEmptyString) ) return false
-    load.subdirs = req.query.subdirs
+      root = req.query[key].root
+      if (!root) return false
+      if ( !rootNames.some(function(e){ return e == root }) ) return false
+      entry.root = root
 
-    file = req.query.file
-    if (!file) return false
-    if (!isNonEmptyString(file)) return false
-    load.file = file
+      subdirs = req.query[key].subdirs
+      if (!subdirs) return false
+      if (!u.isArray(subdirs)) return false
+      if ( !subdirs.every(isNonEmptyString) ) return false
+      entry.subdirs = req.query[key].subdirs
 
-    time = req.query.time
-    // we test each false possable except time=0
-    if (isNonEmptyString(time) || u.isNumber(time)) {
-      if (u.isString(time)) time = parseInt(time, 10)
+      file = req.query[key].file
+      if (!file) return false
+      if (!isNonEmptyString(file)) return false
+      entry.file = file
 
-      if (!isNaN(time)) {
-        if (Number.isInteger(time))
-          load.time = time
-        else {
-          load.time = Math.floor(time)
+      time = req.query[key].time
+      // we test each false possable except time=0
+      if (isNonEmptyString(time) || u.isNumber(time)) {
+        if (u.isString(time)) time = parseInt(time, 10)
+
+        if (!isNaN(time)) {
+          if (Number.isInteger(time))
+            entry.time = time
+          else {
+            entry.time = Math.floor(time)
+          }
         }
       }
-    }
+
+      load[key] = entry
+    } //end: for key of keys
 
     cfg.load = load
 
@@ -103,7 +111,7 @@ module.exports = function(req, res, next){
     // and implemnets a nicer looking bad_query.jade
     return
   }
-  
+
   /* FROM the node.js REPL on v5.1.0
    * > rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/
    * /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/
@@ -150,28 +158,30 @@ module.exports = function(req, res, next){
   //   3 - '[beginning]..[end]'
   var rx
   if (cfg.load) {
-    //console.log('%s: cfg.load = %s', MODNAME, util.inspect(cfg.load, {depth:null,colors:true}))
+    console.log('%s: cfg.load = %s', MODNAME, util.inspect(cfg.load, {depth:null,colors:true}))
     rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;
     // http response code 403 == Forbidden
     // see: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
-    for (let subdir of cfg.load.subdirs) {
-      //console.log('%s: subdir = %j', MODNAME, subdir)
-      if (subdir.match(rx)) {
-        console.error('%s: %j.match(%s)', MODNAME, subdir, rx.toString())
+    for (let key of Object.keys(cfg.load)) {
+      for (let subdir of cfg.load[key].subdirs) {
+        //console.log('%s: subdir = %j', MODNAME, subdir)
+        if (subdir.match(rx)) {
+          console.error('%s: %j.match(%s)', MODNAME, subdir, rx.toString())
+          res.status(403).end('FUCK OFF')
+          return
+        }
+      }
+      //console.log('%s: subdirs passed', MODNAME)
+      if (cfg.load[key].file.match(rx)) {
+        console.error('%s: HACKING ATTEMPTY subdir contained ..', MODNAME)
         res.status(403).end('FUCK OFF')
         return
       }
     }
-    //console.log('%s: subdirs passed', MODNAME)
-    if (cfg.load.file.match(rx)) {
-      console.error('%s: HACKING ATTEMPTY subdir contained ..', MODNAME)
-      res.status(403).end('FUCK OFF')
-      return
-    }
     //console.log('%s: file passed', MODNAME)
   }
-  
+
   //console.log("%s: cfg = %j", MODNAME, { cfg: cfg })
-  
+
   res.render('index', { pretty: true, cfg: cfg })
 };
