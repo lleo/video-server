@@ -48,20 +48,20 @@
 
         var oldState = e.originalEvent.state
         var curState = self.getState()
-        info() && console.log('VideoContent: onPopState: oldState = %o', oldState)
-        info() && console.log('VideoContent: onPopState: curState = %o', curState)
+        info() && console.log('VideoApp: onPopState: oldState = %o', oldState)
+        info() && console.log('VideoApp: onPopState: curState = %o', curState)
 
         var otime = oldState.time
         if (typeof otime == 'string') {
-          info() && console.log('VideoContent: onPopState: otime is a string %o', otime)
+          info() && console.log('VideoApp: onPopState: otime is a string %o', otime)
           otime = parseFloat(otime)
-          info() && console.log('VideoContent: onPopState: otime = %f', otime)
+          info() && console.log('VideoApp: onPopState: otime = %f', otime)
         }
 
         var ctime = curState && curState.time
 
         if ( stateEqualExceptTime(oldState, curState)) {
-          info() && console.log('VideoContent: onPopState: oldState & curState (minus time) are the same')
+          info() && console.log('VideoApp: onPopState: oldState & curState (minus time) are the same')
           videoContents.setPosition(otime)
         }
         else {
