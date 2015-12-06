@@ -435,10 +435,12 @@
           // NOTE: The variable overControls is a boolean that is set true
           // by the 'mouseenter' and false by the 'mouseleave' events
           // See the onMouse{Enter,Leave} functions declared below.
-          if (!ms.overControls && !globalVideoControls.$dom.hasClass('hide'))
+          if (!self.isPaused() && !ms.overControls
+                               && !globalVideoControls.$dom.hasClass('hide'))
             globalVideoControls.$dom.addClass('hide')
 
-          if (!ms.overControls && !self.$dom.hasClass('nocursor'))
+          if (!self.isPaused() && !ms.overControls
+                               && !self.$dom.hasClass('nocursor'))
             self.$dom.addClass('nocursor')
 
           // reset the firstThrottleTimerExecuted & hideBothTimerId
