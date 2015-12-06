@@ -280,10 +280,34 @@
   VideoContents.prototype._setupEvents =
     function VideoContents___setupEvents() {
       if (this._eventsSetup) return
+      this._setupWindowEvents()
       this._setupKeyboardEvents()
       this._setupMouseEvents()
       this._eventsSetup = true
     }
+
+  VideoContents.prototype._setupWindowEvents =
+    function VideoContents___setupWindowEvents() {
+      var self = this
+
+      function onResize(e) {
+        info() && console.log('VideoContents: onResize: e = %o', e)
+        self.resized()
+      }
+      $(window).on('resize', onResize)
+
+      function onFullscreenChange(e) {
+        info() && console.log('onFullscreenChange: e = %o', e)
+        var event = e.originalEvent.type
+        warn() && console.log('onFullscreenChange: caused by %o', event)
+        self.fullscreenChanged(e)
+      }
+      $(document).on('webkitfullscreenchange '
+                    +'mozfullscreenchange '
+                    +'fullscreenchange '
+                    +'MSFullscreenChange'
+                    , onFullscreenChange )
+    } //end: VideoContents___setupWindowEvents)_
 
   VideoContents.prototype._setupKeyboardEvents =
     function VideoContents___setupKeyboardEvents() {
@@ -612,55 +636,54 @@
 //    } //end: VideoContents__toggleFullscreen()
 
   VideoContents.prototype.toggleFullscreen =
-    function VideoContent__toggleFullscreen() {
+    function VideoContents__toggleFullscreen() {
       if ( !this.isFullscreen() ) {
-        //var el = this.$video[0]
         var el = this.$dom[0]
         if (el.requestFullscreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used requestFullscreen')
+          info() && console.log('VideoContents__toggleFullscreen: used requestFullscreen')
           el.requestFullscreen()
         }
         else if (el.msRequestFullscreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used msRequestFullscreen')
+          info() && console.log('VideoContents__toggleFullscreen: used msRequestFullscreen')
           el.msRequestFullscreen()
         }
         else if (el.mozRequestFullScreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used mozRequestFullScreen')
+          info() && console.log('VideoContents__toggleFullscreen: used mozRequestFullScreen')
           el.mozRequestFullScreen()
         }
         else if (el.webkitRequestFullscreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used webkitRequestFullscreen')
+          info() && console.log('VideoContents__toggleFullscreen: used webkitRequestFullscreen')
           el.webkitRequestFullscreen()
         }
         else {
-          console.error('VideoContent__toggleFullscreen: failed to find requestFullScreen equivelent')
+          console.error('VideoContents__toggleFullscreen: failed to find requestFullScreen equivelent')
           alert("requestFullScreen not implemented by this browser")
           return false
         }
-        this.cssCenterSpinners()
+//        this.cssCenterSpinners()
         this._isFullscreen = true
         return true
       }
       else {
         // try to cancel fullscreen
         if (document.cancelFullScreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used document.cancelFullScreen')
+          info() && console.log('VideoContents__toggleFullscreen: used document.cancelFullScreen')
           document.cancelFullScreen()
         }
         else if (document.msExitFullscreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used document.msExitFullscreen')
+          info() && console.log('VideoContents__toggleFullscreen: used document.msExitFullscreen')
           document.msExitFullscreen()
         }
         else if (document.mozCancelFullScreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used document.mozCancelFullScreen')
+          info() && console.log('VideoContents__toggleFullscreen: used document.mozCancelFullScreen')
           document.mozCancelFullScreen()
         }
         else if (document.webkitCancelFullScreen) {
-          info() && console.log('VideoContent__toggleFullscreen: used document.webkitCancelFullScreen')
+          info() && console.log('VideoContents__toggleFullscreen: used document.webkitCancelFullScreen')
           document.webkitCancelFullScreen()
         }
         else {
-          console.error('VideoContent__toggleFullscreen: faled to find cancelFullScreen')
+          console.error('VideoContents__toggleFullscreen: faled to find cancelFullScreen')
           alert('cancelFullScreen not implemented by this browser')
           return false
         }
@@ -691,24 +714,35 @@
 
     var url = window.location.origin + window.location.pathname + "?" + qstr
 
-    console.log('VideoContents__setMark: state = %o', state)
-    console.log('VideoContents__setMark: url = %s', url)
+    info() && console.log('VideoContents__setMark: state = %o', state)
+    info() && console.log('VideoContents__setMark: url = %s', url)
     
     history.pushState(state, null, url)
 
     return this
   } //end: VideoContents__setMark()
 
+  VideoContents.prototype.resized = function VideoContents__resized() {
+    info && console.log('VideoContents__resized: called')
+    this.cssCenterSpinners()
+    this.videoApp.globalVideoControls.cssPositionControls()
+  }
+
+  VideoContents.prototype.fullscreenChanged =
+    function VideoContents__fullscreenChanged() {
+      info && console.log('VideoContents__fullscreenChanged: called')
+      this.videoApp.globalVideoControls.fullscreenChanged()
+    }
 
   function VideoContent( vidNum, root, subdirs, file
-                       , initTime, videoApp ) {
+                       , initialTime, videoApp ) {
     info() && console.log('VideoContent() constructor')
 
     this.vidNum   = vidNum
     this.root     = root
     this.subdirs  = subdirs
     this.file     = file
-    this.initTime = initTime
+    this.initialTime = initialTime
     this.videoApp = videoApp
     this.ids = { div     : 'videoConentDiv-'+vidNum
                , canvas  : 'videoCanvas-'+vidNum
@@ -843,10 +877,10 @@
           globalVideoControls.$positionRng[0].max = self.$video[0].duration
         }
 
-        if (self.initTime) {
-          console.log('onLoadedData: self.initTime = %f', self.initTime)
-          if (0 == self.vidNum) globalVideoControls.setPosition(self.initTime)
-          self.setPosition(self.initTime)
+        if (self.initialTime) {
+          info && console.log('onLoadedData: self.initialTime = %f', self.initialTime)
+          if (0 == self.vidNum) globalVideoControls.setPosition(self.initialTime)
+          self.setPosition(self.initialTime)
         }
 
       })
@@ -872,16 +906,17 @@
         var globalVideoControls = self.videoApp.globalVideoControls
         if ( !globalVideoControls.isEnabled() ) globalVideoControls.enable()
         globalVideoControls.cssPositionControls()
-        self.cssCenterSpinner()
+        self.videoApp.videoContents.cssCenterSpinners()
       })
 
       $video.on('playing', function onPlaying(e){
         info() && console.log("onPlaying: e.target.id=%s", e.target.id)
+        self.playing()
       })
 
-      $video.on('pause', function onPauseMisc(e){
-        info() && console.log("onPlayMisc: e.target.id=%s", e.target.id)
-        //do something ...maybe
+      $video.on('pause', function onPause(e){
+        info() && console.log("onPause: e.target.id=%s", e.target.id)
+        self.paused()
       })
 
       $video.on('seeked', function onSeeked(e) {
@@ -901,8 +936,9 @@
 
       $video.on('timeupdate', function onTimeUpdate(e){
         var globalVideoControls = self.videoApp.globalVideoControls
-        globalVideoControls.$positionRng[0].value = e.target.currentTime
-        globalVideoControls.$positionNum[0].value = Math.floor(e.target.currentTime)
+        var videoContents = self.videoApp.videoContents
+        self.timeupdated(e.target.currentTime)
+
       })
 
       $video.on('ended', function onEnded(e){
@@ -915,19 +951,6 @@
           $playSym.addClass('fa-play')
         }
       })
-
-      function onFullscreenChange(e) {
-        info() && console.log('onFullscreenChange: e = %o', e)
-        var event = e.originalEvent.type
-        warn() && console.log('onFullscreenChange: caused by %o', event)
-        self.fullscreenChanged(e)
-      }
-      $(document).on('webkitfullscreenchange '
-                    +'mozfullscreenchange '
-                    +'fullscreenchange '
-                    +'MSFullscreenChange'
-                    , onFullscreenChange);
-
     } //end: VideoContent__setupVideo()
 
   VideoContent.prototype.startBusy = function VideoContent__startBusy() {
@@ -968,35 +991,54 @@
     return this
   }
 
-  VideoContent.prototype.fullscreenChanged =
-    function VideoContent__fullscreenChanged(e) {
-      var globalVideoControls = this.videoApp.globalVideoControls
-      var $fullscreenSym = globalVideoControls.$fullscreenSym
+  VideoContent.prototype.playing = function VideoContent__playing() {
+    info() && console.log('VideoContent__playing: called vidNum = %o', this.vidNum)
+    if ( this.vidNum === 0 ) {
+      info && console.log('VideoContent__playing: calling globalVideoControls.setPlaying()')
+      this.videoApp.globalVideoControls.setPlaying()
+    }
+  }
 
-      var self = this
+  VideoContent.prototype.paused = function VideoContent__paused() {
+    info() && console.log('VideoContent__paused: called vidNum = %o', this.vidNum)
+    if ( this.vidNum === 0 ) {
+      info() && console.log('VideoContent__paused: calling globalVideoControls.setPaused()')
+      this.videoApp.globalVideoControls.setPaused()
+    }
+  }
 
-      /* This is called only from the fullscreenchange event.
-       * For some reason that fires off before the new fullscreen element
-       * has its dimensions set. So, I have inserted this delayed function
-       * to set the positioning of the spinner and controls.
-       * 500ms seems to be enought most of the time on my MacBook Pro
-       * (early 2011).
-       */
-      setTimeout(function() {
-        self.cssCenterSpinner()
-        globalVideoControls.cssPositionControls()
-      }, 500)
-      
-      if ( $fullscreenSym.hasClass('fa-arrows-alt') ) {
-        $fullscreenSym.removeClass('fa-arrows-alt')
-        $fullscreenSym.addClass('fa-compress')
+  VideoContent.prototype.timeupdated =
+    function VideoContent__timeupdated(curTime) {
+      info() && console.log('VideoContent__timeupdated: this.vidNum = %d', this.vidNum)
+      if ( this.vidNum === 0 ) {
+        info() && console.log('VideoContent__timeupdated: calling globalVideoControls.setPosition(%f)', curTime)
+        this.videoApp.globalVideoControls.setPosition(curTime)
       }
-      else if ( $fullscreenSym.hasClass('fa-compress') ) {
-        $fullscreenSym.removeClass('fa-compress')
-        $fullscreenSym.addClass('fa-arrows-alt')
-      }
-      return true
-    } //end: VideoContent__fullscreenChanged()
+    } //end: VideoContent__timeupdated()
+
+  VideoContent.prototype.ended = function VideoContent__ended() {
+    if ( this.vidNum === 0 ) {
+      this.videoApp.globalVideoControls.setEnded()
+    }
+  }
+
+  //VideoContent.prototype.resized = function VideoContent__resized(e) {
+  //  info() && console.log('VideoContent__resized: called e = %o', e)
+  //  var self = this
+  //
+  //  /* This is called only from the fullscreenchange event.
+  //   * For some reason that fires off before the new fullscreen element
+  //   * has its dimensions set. So, I have inserted this delayed function
+  //   * to set the positioning of the spinner and controls.
+  //   * 500ms seems to be enought most of the time on my MacBook Pro
+  //   * (early 2011) running Chrome.
+  //   */
+  //  setTimeout(function() {
+  //    self.cssCenterSpinner()
+  //  }, 500)
+  //
+  //  return true
+  //} //end: VideoContent__resized()
 
   VideoContent.prototype.cssCenterSpinner =
     function VideoContent__cssCenterSpinner() {
@@ -1206,14 +1248,14 @@
       if ( videoContents.isPaused() ) {
         info() && console.log('onPlayClick: calling videoContents.play()')
         videoContents.play()
-        self.$playSym.removeClass('fa-play')
-        self.$playSym.addClass('fa-pause')
+        //self.$playSym.removeClass('fa-play')
+        //self.$playSym.addClass('fa-pause')
       }
       else {
         info() && console.log('onPlayClick: calling videoContents.pause()')
         videoContents.pause()
-        self.$playSym.removeClass('fa-pause')
-        self.$playSym.addClass('fa-play')
+        //self.$playSym.removeClass('fa-pause')
+        //self.$playSym.addClass('fa-play')
       }
     }
 
@@ -1235,8 +1277,7 @@
 
     this.onSkipClickFn = function onSkipClick(e) {
       info() && console.log('onSkipClick: seeking %d secs', self.skipForwSecs)
-      var videoContents = self.videoApp.videoContents
-      videoContents.seek(self.skipForwSecs)
+      self.videoApp.videoContents.seek(self.skipForwSecs)
     }
 
     this.$flexWrapper.append( this.$skip )
@@ -1256,8 +1297,7 @@
 
     this.onBackClickFn = function onBackClick(e) {
       info() && console.log('onBackClick: seeking %d secs', -self.skipBackSecs)
-      var videoContents = self.videoApp.videoContents
-      videoContents.seek(-self.skipBackSecs)
+      self.videoApp.videoContents.seek(-self.skipBackSecs)
     }
 
     this.$flexWrapper.append( this.$back )
@@ -1274,7 +1314,7 @@
       info() && console.log('onPositionNumInput: e.target.valueAsNumber = %f'
                    , e.target.valueAsNumber)
       var val = e.target.valueAsNumber
-      self.setPosition(val)
+      //self.setPosition(val)
       self.videoApp.videoContents.setPosition(val)
     }
 
@@ -1394,7 +1434,8 @@
     this.$fullscreenSym = $( document.createElement('i') )
                           .attr('id', this.ids.fullscreenSym)
                           .addClass('fa')
-                          .addClass('fa-arrows-alt')
+                          .addClass('fa-expand')
+                          //.addClass('fa-compress')
 
     this.$fullscreen = $( document.createElement('div') )
                        .attr('id', this.ids.fullscreenDiv)
@@ -1405,9 +1446,9 @@
       info() && console.log('onFullscreenClick: called')
 
       var videoContents = self.videoApp.videoContents
+      //var globalVideoControls = self.videoApp.globalVideoControls
 
       videoContents.toggleFullscreen()
-      //self.cssPositionControls()
     }
 
     this.$flexWrapper.append( this.$fullscreen )
@@ -1436,11 +1477,73 @@
     this.$flexWrapper.append( this.$mark )
   } //end: GlobalVideoControls()
 
+  GlobalVideoControls.prototype.setPlaying =
+    function GlobalVideoControls__setPlaying() {
+      info() && console.log('GlobalVideoControls__setPlaying: called')
+      if ( this.$playSym.hasClass('fa-play') ) {
+        this.$playSym.removeClass('fa-play')
+        this.$playSym.addClass('fa-pause')
+      }
+    }
+
+  GlobalVideoControls.prototype.setPaused =
+    function GlobalVideoControls__setPaused() {
+      info() && console.log('GlobalVideoControls__setPaused: called')
+      if ( this.$playSym.hasClass('fa-pause') ) {
+        this.$playSym.removeClass('fa-pause')
+        this.$playSym.addClass('fa-play')
+      }
+    }
+
+  GlobalVideoControls.prototype.setEnded =
+    function GlobalVideoControls__setEnded() {
+      if ( this.$playSym.hasClass('fa-pause') ) {
+        this.$playSym.removeClass('fa-pause')
+        this.$playSym.addClass('fa-play')
+      }
+    }
+
   GlobalVideoControls.prototype.setPosition =
     function GlobalVideoControls__setPosition(fsecs) {
-      this.$positionNum[0].value = fsecs
+      info() && console.log('GlobalVideoControls__setPosition: fsecs = %f', fsecs)
+      if (fsecs < 0) fsecs = 0
       this.$positionRng[0].value = fsecs
+      this.$positionNum[0].value = Math.floor(fsecs)
     }
+
+  GlobalVideoControls.prototype.setPlayable =
+    function GlobalVideoControls__setPlayable() {
+      if (this.$playSym.hasClass('fa-pause')) {
+        this.$playSym.removeClass('fa-pause')
+        this.$playSym.addClass('fa-play')
+      }
+    }
+
+  GlobalVideoControls.prototype.fullscreenChanged =
+    function GlobalVideoControls__fullscreenChanged() {
+      console.log('GlobalVideoControls__fullscreenChanged: called')
+      var self = this
+
+      /* This is called only from the fullscreenchange event.
+       * For some reason that fires off before the new fullscreen element
+       * has its dimensions set. So, I have inserted this delayed function
+       * to set the positioning of the spinner and controls.
+       * 500ms seems to be enought most of the time on my MacBook Pro
+       * (early 2011) running Chrome.
+       */
+      setTimeout(function() {
+        self.cssPositionControls()
+      }, 500)
+
+      if ( this.$fullscreenSym.hasClass('fa-expand') ) {
+        this.$fullscreenSym.removeClass('fa-expand')
+        this.$fullscreenSym.addClass('fa-compress')
+      }
+      else if ( this.$fullscreenSym.hasClass('fa-compress') ) {
+        this.$fullscreenSym.removeClass('fa-compress')
+        this.$fullscreenSym.addClass('fa-expand')
+      }
+    } //end: GlobalVideoControls__fullscreenChanged()
 
   GlobalVideoControls.prototype.cssPositionControls =
     function GlobalVideoControls__cssPositionControls() {
@@ -1474,21 +1577,6 @@
           this.$playSym.removeClass('fa-voluem-down')
         }
         this.$playSym.addClass('fa-volume-up')
-      }
-    }
-
-  GlobalVideoControls.prototype.setPosition =
-    function GlobalVideoControls__setPosition(fsecs) {
-      if (fsecs < 0) fsecs = 0
-      this.$positionRng[0].value = fsecs
-      this.$positionNum[0].value = Math.floor(fsecs)
-    }
-
-  GlobalVideoControls.prototype.setPlayable =
-    function GlobalVideoControls__setPlayable() {
-      if (this.$playSym.hasClass('fa-pause')) {
-        this.$playSym.removeClass('fa-pause')
-        this.$playSym.addClass('fa-play')
       }
     }
 
@@ -1815,7 +1903,7 @@
       var self = this
       function addVideoContentFn(e) {
         self.addVideoContentButton.$dom.remove()
-        // the last argument of addVideoContent initTime is left undefined
+        // the last argument of addVideoContent initialTime is left undefined
         self.videoApp.videoContents.addVideoContent(root, subdirs, file)
       }
       this.addVideoContentButton.$dom.click( addVideoContentFn )
