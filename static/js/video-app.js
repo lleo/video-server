@@ -1266,6 +1266,7 @@
         //self.$playSym.removeClass('fa-pause')
         //self.$playSym.addClass('fa-play')
       }
+      self.$dom.trigger('mousemove')
     }
 
     this.$flexWrapper.append( this.$play )
@@ -1502,6 +1503,9 @@
         this.$playSym.removeClass('fa-pause')
         this.$playSym.addClass('fa-play')
       }
+      if ( this.$dom.hasClass('hide') ) {
+        this.$dom.removeClass('hide')
+      }
     }
 
   GlobalVideoControls.prototype.setEnded =
@@ -1572,20 +1576,20 @@
       if (pct > 100) pct = 100
       this.$volumeRng[0].value = pct
 
-      if (this.$playSym.hasClass('fa-volume-off')) {
-        this.removeClass('fa-volume-off')
+      if (this.$volumeSym.hasClass('fa-volume-off')) {
+        this.$volumeSym.removeClass('fa-volume-off')
       }
       if (pct < 50) {
-        if ( this.$playSym.hasClass('fa-volume-up') ) {
-          this.$playSym.removeClass('fa-volume-up')
+        if ( this.$volumeSym.hasClass('fa-volume-up') ) {
+          this.$volumeSym.removeClass('fa-volume-up')
         }
-        this.$playSym.addClass('fa-volume-down')
+        this.$volumeSym.addClass('fa-volume-down')
       }
       else {
-        if ( this.$playSym.hasClass('fa-volume-down') ) {
-          this.$playSym.removeClass('fa-voluem-down')
+        if ( this.$volumeSym.hasClass('fa-volume-down') ) {
+          this.$volumeSym.removeClass('fa-voluem-down')
         }
-        this.$playSym.addClass('fa-volume-up')
+        this.$volumeSym.addClass('fa-volume-up')
       }
     }
 
@@ -1681,6 +1685,12 @@
     this.ids = { div : 'perVideoControls-'+vidNum
                , muteSym : 'pvcMuteSym-'+vidNum
                , muteBtn : 'pvcMuteBtn-'+vidNum
+               , skipTinyBtn : 'pvcSkipTinyBtn-'+vidNum
+               , backTinyBtn : 'pvcBackTinyBtn-'+vidNum
+               , skipSmallBtn : 'pvcSkipSmallBtn-'+vidNum
+               , backSmallBtn : 'pvcBackSmallBtn-'+vidNum
+               , skipBigBtn   : 'pvcSkipBigBtn-'+vidNum
+               , backBigBtn   : 'pvcBackBigBtn-'+vidNum
                }
 
     this.$dom = $( document.createElement('div') )
@@ -1699,7 +1709,97 @@
                     .addClass('muteBtn')
                     .append( this.$muteSym )
 
-    this.$dom.append( this.$muteBtn )
+    this.$skipTinyBtn = $( document.createElement('div') )
+                        .attr('id', this.ids.skipTiny)
+                        .addClass('control')
+                        .addClass('skipTinyBtn')
+                        .append( $(document.createElement('i'))
+                                 .addClass('fa')
+                                 .addClass('fa-angle-right')
+                                 .addClass('skipTinySym')
+                               )
+
+    this.$skipTinyBtn = $( document.createElement('div') )
+                        .attr('id', this.ids.skipTiny)
+                        .addClass('control')
+                        .addClass('skipTinyBtn')
+                        .append( $(document.createElement('i'))
+                                 .addClass('fa')
+                                 .addClass('fa-angle-right')
+                               )
+
+    this.$backTinyBtn = $( document.createElement('div') )
+                        .attr('id', this.ids.backTiny)
+                        .addClass('control')
+                        .addClass('backTinyBtn')
+                        .append( $(document.createElement('i'))
+                                 .addClass('fa')
+                                 .addClass('fa-angle-left')
+                               )
+
+    this.$skipSmallBtn = $( document.createElement('div') )
+                         .attr('id', this.ids.skipSmall)
+                         .addClass('control')
+                         .addClass('skipSmallBtn')
+                         .append( $(document.createElement('i'))
+                                  .addClass('fa')
+                                  .addClass('fa-angle-right')
+                                , $(document.createElement('i'))
+                                  .addClass('fa')
+                                  .addClass('fa-angle-right')
+                                )
+
+    this.$backSmallBtn = $( document.createElement('div') )
+                         .attr('id', this.ids.backSmall)
+                         .addClass('control')
+                         .addClass('backSmallBtn')
+                         .append( $(document.createElement('i'))
+                                  .addClass('fa')
+                                  .addClass('fa-angle-left')
+                                , $(document.createElement('i'))
+                                  .addClass('fa')
+                                  .addClass('fa-angle-left')
+                                )
+
+    this.$skipBigBtn = $( document.createElement('div') )
+                       .attr('id', this.ids.skipBig)
+                       .addClass('control')
+                       .addClass('skipBigBtn')
+                       .append( $(document.createElement('i'))
+                                .addClass('fa')
+                                .addClass('fa-angle-right')
+                              , $(document.createElement('i'))
+                                .addClass('fa')
+                                .addClass('fa-angle-right')
+                              , $(document.createElement('i'))
+                                .addClass('fa')
+                                .addClass('fa-angle-right')
+                              )
+
+    this.$backBigBtn = $( document.createElement('div') )
+                       .attr('id', this.ids.backBig)
+                       .addClass('control')
+                       .addClass('backBigBtn')
+                       .append( $(document.createElement('i'))
+                                .addClass('fa')
+                                .addClass('fa-angle-left')
+                              , $(document.createElement('i'))
+                                .addClass('fa')
+                                .addClass('fa-angle-left')
+                              , $(document.createElement('i'))
+                                .addClass('fa')
+                                .addClass('fa-angle-left')
+                              )
+
+    this.$dom.append( this.$backBigBtn
+                    , this.$backSmallBtn
+                    , this.$backTinyBtn
+                    , this.$muteBtn
+                    , this.$skipTinyBtn
+                    , this.$skipSmallBtn
+                    , this.$skipBigBtn
+                    )
+
 
   } //end: PerVideoControls()
 

@@ -145,14 +145,38 @@ div.btn {
 div.perVideoControls {
   z-index  : 2147483647;
   position : absolute;
-  font-size: 20pt;
-  top : 10px;
-  left: 10px;
+  font-size: 14pt;
+  top      : 10px;
+  right    : 10px;
 }
 
 div.muteBtn {
-  min-width : 1em;
+  min-width : 1.1em;
   min-height: 1em;
+}
+
+div.skipTinyBtn {
+  width : 0.7em;
+}
+
+div.backTinyBtn {
+  width : 0.7em;
+}
+
+div.skipSmallBtn {
+  width : 1em;
+}
+
+div.backSmallBtn {
+  width : 1em;
+}
+
+div.skipBigBtn {
+  width : 1.3em;
+}
+
+div.backBigBtn {
+  width : 1.3em;
 }
 
 div#globalVideoControls {
@@ -253,7 +277,7 @@ div#volume {
 div#volumeSymDiv {
   display        : inline-block;
   position       : relative;
-  top            : -2px;
+  top            : 0px;
   left           : 0px;
 /*  virtical-align : text-top;*/
 /*  align-text     : right;*/
