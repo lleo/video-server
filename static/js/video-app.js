@@ -1009,9 +1009,9 @@
 
   VideoContent.prototype.timeupdated =
     function VideoContent__timeupdated(curTime) {
-      info() && console.log('VideoContent__timeupdated: this.vidNum = %d', this.vidNum)
+      //info() && console.log('VideoContent__timeupdated: this.vidNum = %d', this.vidNum)
       if ( this.vidNum === 0 ) {
-        info() && console.log('VideoContent__timeupdated: calling globalVideoControls.setPosition(%f)', curTime)
+        //info() && console.log('VideoContent__timeupdated: calling globalVideoControls.setPosition(%f)', curTime)
         this.videoApp.globalVideoControls.setPosition(curTime)
       }
     } //end: VideoContent__timeupdated()
@@ -1505,7 +1505,7 @@
 
   GlobalVideoControls.prototype.setPosition =
     function GlobalVideoControls__setPosition(fsecs) {
-      info() && console.log('GlobalVideoControls__setPosition: fsecs = %f', fsecs)
+      //info() && console.log('GlobalVideoControls__setPosition: fsecs = %f', fsecs)
       if (fsecs < 0) fsecs = 0
       this.$positionRng[0].value = fsecs
       this.$positionNum[0].value = Math.floor(fsecs)
