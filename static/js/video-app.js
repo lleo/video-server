@@ -1652,8 +1652,11 @@
       this.$play.off('click', this.onPlayClickFn)
       this.$skip.off('click', this.onSkipClickFn)
       this.$back.off('click', this.onBackClickFn)
+      this.$positionNum.off('input', this.onPositionNumInputFn)
+      this.$positionRng.off('input', this.onPositionRngInputFn)
+      this.$volumeSymDiv.off('click', this.onVolumeSymClickFn)
+      this.$volumeRng.off('input', this.onVolumeRngInputFn)
       this.$fullscreen.off('click', this.onFullscreenClickFn)
-      this.$volumeSym.off('click', this.onVolumeSymClickFn)
       this.$mark.off('click', this.onMarkClickFn)
 
       this._enabled = false
