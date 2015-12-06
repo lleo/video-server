@@ -142,6 +142,19 @@ div.btn {
 /*  min-width: 2em; */
 }
 
+div.perVideoControls {
+  z-index  : 2147483647;
+  position : absolute;
+  font-size: 20pt;
+  top : 10px;
+  left: 10px;
+}
+
+div.muteBtn {
+  min-width : 1em;
+  min-height: 1em;
+}
+
 div#globalVideoControls {
   z-index  : 2147483647;
   position : absolute;

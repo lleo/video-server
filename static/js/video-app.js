@@ -795,6 +795,13 @@
 
     this.$video = $video
 
+    var pvcfg = { tinySkip  : 1
+                , smallSkip : 5
+                , midSkip   : 30
+                }
+    var perVideoControls = new PerVideoControls(pvcfg, this, videoApp)
+    this.perVideoControls = perVideoControls
+
     var $spinnerSym = $( document.createElement('i') )
                       .attr('id', this.ids.spinnerSym)
                       .addClass('fa')
@@ -817,8 +824,8 @@
                 .attr('tabindex', 1)
                 .addClass('videoContent')
                 .append( this.$video )
-
-    this.$dom.append( this.$spinner )
+                .append( this.perVideoControls.$dom )
+                .append( this.$spinner )
 
     this._setupEvents()
   } //end: VideoContent()
@@ -1665,7 +1672,36 @@
     } //end: GlobalVideoControls__disable()
 
   function PerVideoControls(_cfg, videoContent, videoApp) {
-  }
+    this.cfg = _.cloneDeep(_cfg)
+    this.videoContent = videoContents
+    this.videoApp = videoApp
+
+    var vidNum = videoContent.vidNum
+
+    this.ids = { div : 'perVideoControls-'+vidNum
+               , muteSym : 'pvcMuteSym-'+vidNum
+               , muteBtn : 'pvcMuteBtn-'+vidNum
+               }
+
+    this.$dom = $( document.createElement('div') )
+                .attr('id', this.ids.div)
+                .addClass('perVideoControls')
+
+    this.$muteSym = $( document.createElement('i') )
+                    .attr('id', this.ids.muteSym)
+                    .addClass('fa')
+                    .addClass('fa-volume-up')
+                    //.addClass('fa-volume-off')
+
+    this.$muteBtn = $( document.createElement('div') )
+                    .attr('id', this.ids.muteBtn)
+                    .addClass('control')
+                    .addClass('muteBtn')
+                    .append( this.$muteSym )
+
+    this.$dom.append( this.$muteBtn )
+
+  } //end: PerVideoControls()
 
 
   function FileBrowser(rootNames, videoApp) {
