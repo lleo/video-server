@@ -106,9 +106,9 @@ div.videoContent {
 }
 
 div.videoContent:focus {
-/*  outline-color : rgba(0,0,0,0); */
-/*  outline-style : auto; */
-/*  outline-width : auto; */
+  outline-color : rgba(0,0,0,0);
+  outline-style : auto;
+  outline-width : auto;
 }
 
 div.videoDisplay {
