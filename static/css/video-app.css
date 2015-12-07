@@ -283,6 +283,8 @@ div#volumeSymDiv {
 /*  align-text     : right;*/
   margin-left    : 3px;
   margin-right   : 2px;
+  width : 1em;
+  height: 1em;
 }
 
 div#position {
