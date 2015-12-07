@@ -585,6 +585,14 @@
     return allSeeked
   }
 
+  VideoContents.prototype.toggleMute = function VideoContents__toggleMute() {
+    var allToggled = true
+    for (var i=0; i<this.contents.length; i+=1) {
+      allToggled = this.contents[i].toggleMute() && allToggled
+    }
+    return allToggled
+  }
+
   VideoContents.prototype.setVolume = function VideoContents__setVolume(pct) {
     'use strict';
     if (pct < 0) pct = 0
@@ -797,7 +805,7 @@
 
     var pvcfg = { tinySkip  : 1
                 , smallSkip : 5
-                , midSkip   : 30
+                , bigSkip   : 30
                 }
     var perVideoControls = new PerVideoControls(pvcfg, this, videoApp)
     this.perVideoControls = perVideoControls
@@ -1098,6 +1106,22 @@
     return this
   }
 
+  VideoContents.prototype.isMuted = function VideoContent__isMuted() {
+    return this.$video[0].muted
+  }
+
+  VideoContent.prototype.toggleMute = function VideoContent__toggleMute() {
+    //console.log('VideoContent__toggleMute: called. this.$video[0].muted = %o', this.$video[0].muted)
+    if ( !this.$video[0].muted ) {
+      this.$video[0].muted = true
+    }
+    else {
+      this.$video[0].muted = false
+    }
+    //console.log('VideoContent__toggleMute: end. this.$video[0].muted = %o', this.$video[0].muted)
+    return true
+  }
+
   VideoContent.prototype.setVolume = function VideoContent__setVolume(pct) {
     if (pct > 0 && pct < 1) {
       console.error('VideoContent__setVolume: pct > 0 && pct < 1')
@@ -1371,43 +1395,25 @@
     this.onVolumeSymClickFn = function onVolumeSymClick(e) {
       var videoEl
       var videoContents = self.videoApp.videoContents
-      if (videoContents.contents.length) {
-        videoEl = videoContents.contents[0].$video[0]
+
+      videoContents.toggleMute()
+
+      if ( self.$volumeSym.hasClass('fa-volume-up') ||
+           self.$volumeSym.hasClass('fa-volume-down') ) {
+        self.$volumeSym.removeClass('fa-volume-up')
+        self.$volumeSym.removeClass('fa-volume-down')
+        self.$volumeSym.addClass('fa-volume-off')
       }
       else {
-        console.error('onVolumeSymClick: videoContents.contents.length = 0')
-        return
-      }
+        self.$volumeSym.removeClass('fa-volume-off')
 
-      info() && console.log('onVolumeSymClick: before volume = %f', videoEl.volume)
-      if (videoEl.muted) {
-        videoEl.muted = false
-        info() && console.log('onVolumeSymClick: muted after volume = %f', videoEl.volume)
-
-        if ( self.$volumeSym.hasClass('fa-volume-off') ) {
-          self.$volumeSym.removeClass('fa-volume-off')
-
-          if (videoEl.volume < 0.5) {
+        if (videoContents.contents.length) {
+          videoEl = videoContents.contents[0].$video[0]
+          if (videoEl.volume < 0.5)
             self.$volumeSym.addClass('fa-volume-down')
-          }
-          else {
+          else
             self.$volumeSym.addClass('fa-volume-up')
-          }
         }
-      }
-      else { //volume on
-        videoEl.muted = true
-        info() && console.log('onVolumeSymClick: not muted after volume = %f', videoEl.volume)
-
-        if ( self.$volumeSym.hasClass('fa-volume-down') ) {
-          self.$volumeSym.removeClass('fa-volume-down')
-        }
-        if ( self.$volumeSym.hasClass('fa-volume-up') ) {
-          self.$volumeSym.removeClass('fa-volume-up')
-        }
-
-        self.$volumeSym.addClass('fa-volume-off')
-        return
       }
     } //end: onVolumeSymClick()
 
@@ -1676,11 +1682,12 @@
     } //end: GlobalVideoControls__disable()
 
   function PerVideoControls(_cfg, videoContent, videoApp) {
-    this.cfg = _.cloneDeep(_cfg)
-    this.videoContent = videoContents
-    this.videoApp = videoApp
-
     var vidNum = videoContent.vidNum
+    var self = this
+
+    this.cfg = _.cloneDeep(_cfg)
+    this.videoContent = videoContent
+    this.videoApp = videoApp
 
     this.ids = { div : 'perVideoControls-'+vidNum
                , muteSym : 'pvcMuteSym-'+vidNum
@@ -1709,15 +1716,18 @@
                     .addClass('muteBtn')
                     .append( this.$muteSym )
 
-    this.$skipTinyBtn = $( document.createElement('div') )
-                        .attr('id', this.ids.skipTiny)
-                        .addClass('control')
-                        .addClass('skipTinyBtn')
-                        .append( $(document.createElement('i'))
-                                 .addClass('fa')
-                                 .addClass('fa-angle-right')
-                                 .addClass('skipTinySym')
-                               )
+    this.onMuteBtnClick = function onMuteBtnClick(e) {
+      console.log('onMuteBtnClick: called.')
+      self.videoContent.toggleMute()
+      if (self.$muteSym.hasClass('fa-volume-up')) {
+        self.$muteSym.removeClass('fa-volume-up')
+        self.$muteSym.addClass('fa-volume-off')
+      }
+      else {
+        self.$muteSym.removeClass('fa-volume-off')
+        self.$muteSym.addClass('fa-volume-up')
+      }
+    }
 
     this.$skipTinyBtn = $( document.createElement('div') )
                         .attr('id', this.ids.skipTiny)
@@ -1727,6 +1737,11 @@
                                  .addClass('fa')
                                  .addClass('fa-angle-right')
                                )
+
+    this.onSkipTinyBtnClick = function onSkipTinyBtnClick(e) {
+      console.log('onSkipTinyBtnClick: called.')
+      self.videoContent.seek(self.cfg.tinySkip)
+    }
 
     this.$backTinyBtn = $( document.createElement('div') )
                         .attr('id', this.ids.backTiny)
@@ -1736,6 +1751,11 @@
                                  .addClass('fa')
                                  .addClass('fa-angle-left')
                                )
+
+    this.onBackTinyBtnClick = function onBackTinyBtnClick(e) {
+      console.log('onBackTinyBtnClick: called.')
+      self.videoContent.seek(-self.cfg.tinySkip)
+    }
 
     this.$skipSmallBtn = $( document.createElement('div') )
                          .attr('id', this.ids.skipSmall)
@@ -1749,6 +1769,11 @@
                                   .addClass('fa-angle-right')
                                 )
 
+    this.onSkipSmallBtnClick = function onSkipSmallBtnClick(e) {
+      console.log('onSkipSmallBtnClick: called.')
+      self.videoContent.seek(self.cfg.smallSkip)
+    }
+
     this.$backSmallBtn = $( document.createElement('div') )
                          .attr('id', this.ids.backSmall)
                          .addClass('control')
@@ -1760,6 +1785,11 @@
                                   .addClass('fa')
                                   .addClass('fa-angle-left')
                                 )
+
+    this.onBackSmallBtnClick = function onBackSmallBtnClick(e) {
+      console.log('onBackSmalBtnClick: called.')
+      self.videoContent.seek(-self.cfg.smallSkip)
+    }
 
     this.$skipBigBtn = $( document.createElement('div') )
                        .attr('id', this.ids.skipBig)
@@ -1776,6 +1806,11 @@
                                 .addClass('fa-angle-right')
                               )
 
+    this.onSkipBigBtnClick = function onSkipBigBtnClick(e) {
+      console.log('onSkipBigBtnClick: called.')
+      self.videoContent.seek(self.cfg.bigSkip)
+    }
+
     this.$backBigBtn = $( document.createElement('div') )
                        .attr('id', this.ids.backBig)
                        .addClass('control')
@@ -1791,6 +1826,11 @@
                                 .addClass('fa-angle-left')
                               )
 
+    this.onBackBigBtnClick = function onBackBigBtnClick(e) {
+      console.log('onBackBigBtnClick: called.')
+      self.videoContent.seek(-self.cfg.bigSkip)
+    }
+
     this.$dom.append( this.$backBigBtn
                     , this.$backSmallBtn
                     , this.$backTinyBtn
@@ -1800,9 +1840,42 @@
                     , this.$skipBigBtn
                     )
 
-
+    this.enable()
   } //end: PerVideoControls()
 
+  PerVideoControls.prototype.enable = function PerVideoControls__enable() {
+    if (!this._enabled) {
+
+      this.$muteBtn.on('click', this.onMuteBtnClick)
+      this.$skipTinyBtn.on('click', this.onSkipTinyBtnClick)
+      this.$skipSmallBtn.on('click', this.onSkipSmallBtnClick)
+      this.$skipBigBtn.on('click', this.onSkipBigBtnClick)
+      this.$backTinyBtn.on('click', this.onBackTinyBtnClick)
+      this.$backSmallBtn.on('click', this.onBackSmalBtnClick)
+      this.$backBigBtn.on('click', this.onBackBigBtnClick)
+
+      this._enabled = true
+    }
+    else
+      console.error('PerVideoControls__enable: already enabled this._enabled = %o', this._enabled)
+  }
+
+  PerVideoControls.prototype.disable = function PerVideoControls__disable() {
+    if (this._enabled) {
+
+      this.$muteBtn.off('click', this.onMuteBtnClick)
+      this.$skipTinyBtn.off('click', this.onSkipTinyBtnClick)
+      this.$skipSmallBtn.off('click', this.onSkipSmallBtnClick)
+      this.$skipBigBtn.off('click', this.onSkipBigBtnClick)
+      this.$backTinyBtn.off('click', this.onBackTinyBtnClick)
+      this.$backSmallBtn.off('click', this.onBackSmalBtnClick)
+      this.$backBigBtn.off('click', this.onBackBigBtnClick)
+
+      this._enabled = false
+    }
+    else
+      console.error('PerVideoControls__disable: already disabled this.enabled = %o', this._enabled)
+  }
 
   function FileBrowser(rootNames, videoApp) {
     /* rootNames = [ name_1, name_2, ..., name_n]
