@@ -1,4 +1,4 @@
-/*global wrapSelect */
+/*global _ inherits EventEmitter */
 /*
  * NOTE: Remember this is running in the browser.
  */
@@ -15,11 +15,13 @@
     warn() && console.log('cfg.debug = %s; this.debug = %s;', cfg.debug, this.debug)
     VideoApp.setLogLevel(this.debug)
 
+    var videoContents = new VideoContents(cfg['load'], this)
+    this.videoContents = videoContents
+
     var globalVideoControls = new GlobalVideoControls(cfg['controls config'], this)
     this.globalVideoControls = globalVideoControls
 
-    var videoContents = new VideoContents(cfg['load'], this)
-    this.videoContents = videoContents
+    this.videoContents.$dom.append(this.globalVideoControls.$dom)
 
     var fileBrowser   = new FileBrowser(cfg['video root names'], this)
 
@@ -52,7 +54,7 @@
         info() && console.log('VideoApp: onPopState: curState = %o', curState)
 
         var otime = oldState.time
-        if (typeof otime == 'string') {
+        if (typeof otime === 'string') {
           info() && console.log('VideoApp: onPopState: otime is a string %o', otime)
           otime = parseFloat(otime)
           info() && console.log('VideoApp: onPopState: otime = %f', otime)
@@ -137,6 +139,8 @@
   }
 
   function VideoContents(initialLoad, videoApp) {
+    var self = this
+
     this.videoApp = videoApp
     this.initialLoad = _.cloneDeep(initialLoad)
     this.contents = []
@@ -148,17 +152,17 @@
     this.$dom = $( document.createElement('div') )
                 .attr('id', this.id)
                 .addClass('nocursor')
-                .append( videoApp.globalVideoControls.$dom )
+//                .append( videoApp.globalVideoControls.$dom )
 
     this.contents = [] //array of VideoContent objects
     this._isFullscreen = false
     this._eventsSetup = false
+    this._eventCoalator = {}
 
     // !!! HACK ALERT !!!
     // setTimeout() thing works but I do not like it :(
     // also see onLoadedData for how the time position is set.
     if (this.initialLoad) {
-      var self = this
       setTimeout(function() {
         'use strict';
         function sortfn(a,b) {
@@ -188,94 +192,7 @@
     this._setupEvents()
   } //end: VideoContents constructor
 
-  VideoContents.prototype.getState = function VideoContents__getState() {
-    // Ok, I don't support multiple videos yet so just return the state
-    // of this.contents[0].getState() if it exists, else undefined.
-    return this.contents.length ? this.contents[0].getState() : undefined
-  } //end: VideoContents__getState()
-
-  VideoContents.prototype.addVideoContent =
-    function VideoContents__addVideoContent(root, subdirs, file, initTime) {
-      'use strict';
-
-      /* Remove any video content that exists
-       * 
-       * NOTE: *Multiple Videos*
-       * Eventually I'll guard this with a setting that allows multiple
-       * video streams to be open controled with one set of controls.
-       * The reason for watching multiple streams at the same time is to
-       * compare original versions versus extended versions and such.
-       */
-      while (this.contents.length) {
-        this.contents.pop().$dom.remove()
-      }
-
-      var globalVideoControls = this.videoApp.globalVideoControls
-      globalVideoControls.reset()
-
-      var vidNum = this.contents.length
-
-      var videoContent = new VideoContent(vidNum, root, subdirs, file,
-                                          initTime, this.videoApp)
-
-      this.contents.push(videoContent)
-      this.$dom.append(videoContent.$dom)
-
-      info() && console.log('VideoContents__addVideoContent: added new VideoContent')
-      info() && console.log('VideoContents__addVideoContent: calling out to "findtrack"')
-      var self = this
-      function findtrackSuccess(data) {
-        info() && console.log('findtrackSuccess: data = %o', data)
-
-        var tracks = []
-        if ( data.tracks && _.isArray(data.tracks) &&
-             data.tracks.every(function(e) { return _.isPlainObject(e) }) ) {
-          info() && console.log('findTrackSuccess: tracks are mostly wellformed')
-          tracks = data.tracks
-        }
-        else {
-          warn() && console.log('findTrackSuccess: tracks are NOT wellformed')
-          return
-        }
-
-        warn() && console.log('VideoContents__addVideoContent: findtrackSuccess: tracks = %o', tracks)
-
-        info() && console.log('VideoContents__addVideoContent: tracks.length = %d', tracks.length)
-        var $newTrack
-        if (tracks.length) {
-          info() && console.log('VideoContents__addVideoContent: tracks.length non-zero adding the first one as the default')
-          //the first track is set as default
-          $newTrack = $( document.createElement('track') )
-                      .attr('default', true)
-                      .attr('kind', 'subtitles') //or 'captions'; can be omitted
-                      .attr('src', tracks[0].uri)
-                      .attr('srclang', tracks[0].lang)
-                      .attr('label', tracks[0].label)
-
-          videoContent.$video.append($newTrack)
-
-          for (var i=1; i<tracks.length; i+=1) {
-            info() && console.log('VideoContents__addVideoContent: adding track for i=%d', i)
-            $newTrack = $( document.createElement('track') )
-                        .attr('kind', 'subtitles') //or 'captions'; can be omitted
-                        .attr('src', tracks[i].uri)
-                        .attr('srclang', tracks[i].lang)
-                        .attr('label', tracks[i].label)
-
-            videoContent.$video.append($newTrack)
-          } //end: for
-        } //end: if
-      } //end: findtrackSuccess()
-      $.ajax({ url  : 'findtrack'
-             , type : 'GET'
-             , data : { root    : root
-                      , subdirs : subdirs
-                      , file    : file
-                      }
-             , success : findtrackSuccess
-             })
-
-    } //end: VideoContents__addVideoContent()
+  inherits(VideoContents, EventEmitter)
 
   VideoContents.prototype._setupEvents =
     function VideoContents___setupEvents() {
@@ -319,7 +236,8 @@
         var globalVideoControls = self.videoApp.globalVideoControls
         var videoContents = self.videoApp.videoContents
 
-        /* From https://api.jquery.com/keypress/
+        /* NOTE:
+         * From https://api.jquery.com/keypress/
          *  e.type 'keypress'
          *  e.timeStamp Date.now()
          *  e.keyCode number of char pressed
@@ -418,54 +336,87 @@
       var ms = this._mouseState
       var self = this
 
-      function onMouseMove() {
-        //info() && console.log('onMouseMove: called')
-        // The algorithm is as follows:
-        // 0 - turn off the on 'mousemove' event handler
-        //   - show controls & cursor & start throttling the 'mousemove' events
-        // 1 - if 2000ms after the first throttle timer has fired,
-        //     then hide the controls & cursor
+      //function onMouseMove() {
+      //  //info() && console.log('onMouseMove: called')
+      //  // The algorithm is as follows:
+      //  // 0 - turn off the on 'mousemove' event handler
+      //  //   - show controls & cursor & start throttling the 'mousemove' events
+      //  // 1 - if 2000ms after the first throttle timer has fired,
+      //  //     then hide the controls & cursor
+      //  var globalVideoControls = self.videoApp.globalVideoControls
+      //
+      //  // Given that every time 50ms after a 'mousemove' event we disable
+      //  // and then reenable this timer function for 2000ms,
+      //  // **this function only fires** when no 'mousemove' events has
+      //  // occured for over 2050ms.
+      //  function hideBothTimerFn() {
+      //    // NOTE: The variable overControls is a boolean that is set true
+      //    // by the 'mouseenter' and false by the 'mouseleave' events
+      //    // See the onMouse{Enter,Leave} functions declared below.
+      //    if (!self.isPaused() && !ms.overControls
+      //                         && !globalVideoControls.$dom.hasClass('hide'))
+      //      globalVideoControls.$dom.addClass('hide')
+      //
+      //    if (!self.isPaused() && !ms.overControls
+      //                         && !self.$dom.hasClass('nocursor'))
+      //      self.$dom.addClass('nocursor')
+      //
+      //    // reset the firstThrottleTimerExecuted & hideBothTimerId
+      //    ms.firstThrottleTimerExecuted = true
+      //    ms.hideBothTimerId = undefined
+      //  }
+      //
+      //  // This is the second part of the throttle algorithm.
+      //  // First, every time onMouseMove() fires we turn off watching for
+      //  //   'mousemove' events and set this timer fuction (see below).
+      //  // When this timer function fires we turn the watch for 'mousemove'
+      //  //   events back on. So for 50ms the 'mousemove' events were ignored.
+      //  function throttleTimerFn() {
+      //    self.$dom.on('mousemove', onMouseMove)
+      //    // IF the the hideBothTimerFn has already been set
+      //    // OR this is the first in a sequence of 'mousemove' events
+      //    if (ms.hideBothTimerId || ms.firstThrottleTimerExecuted) {
+      //      clearTimeout(ms.hideBothTimerId)
+      //      ms.firstThrottleTimerExecuted = false
+      //      ms.hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
+      //    }
+      //  }
+      //
+      //  // mouse moved -> disable on 'mousemove' events; throttling
+      //  self.$dom.off('mousemove', onMouseMove)
+      //
+      //  // mouse moved -> show controls
+      //  if ( globalVideoControls.$dom.hasClass('hide') ) {
+      //    globalVideoControls.$dom.removeClass('hide')
+      //  }
+      //
+      //  // mouse moved -> show cursor
+      //  if ( self.$dom.hasClass('nocursor') ) {
+      //    self.$dom.removeClass('nocursor')
+      //  }
+      //
+      //  // in 50ms (1/20th sec) reenable 'mousemove' events
+      //  setTimeout(throttleTimerFn, 50)
+      //} //end: onMouseMove()
+      //
+      //this.$dom.on('mousemove', onMouseMove)
+
+      var debouncedHideBoth = _.debounce(function(e) {
+        //console.log('debouncedHideBoth: called.')
         var globalVideoControls = self.videoApp.globalVideoControls
 
-        // Given that every time 50ms after a 'mousemove' event we disable
-        // and then reenable this timer function for 2000ms,
-        // **this function only fires** when no 'mousemove' events has
-        // occured for over 2050ms.
-        function hideBothTimerFn() {
-          // NOTE: The variable overControls is a boolean that is set true
-          // by the 'mouseenter' and false by the 'mouseleave' events
-          // See the onMouse{Enter,Leave} functions declared below.
-          if (!self.isPaused() && !ms.overControls
-                               && !globalVideoControls.$dom.hasClass('hide'))
-            globalVideoControls.$dom.addClass('hide')
+        if (!self.isPaused() && !ms.overControls
+                             && !globalVideoControls.$dom.hasClass('hide'))
+          globalVideoControls.$dom.addClass('hide')
 
-          if (!self.isPaused() && !ms.overControls
-                               && !self.$dom.hasClass('nocursor'))
-            self.$dom.addClass('nocursor')
+        if (!self.isPaused() && !ms.overControls
+                             && !self.$dom.hasClass('nocursor'))
+          self.$dom.addClass('nocursor')
+      }, 2000)
 
-          // reset the firstThrottleTimerExecuted & hideBothTimerId
-          ms.firstThrottleTimerExecuted = true
-          ms.hideBothTimerId = undefined
-        }
-
-        // This is the second part of the throttle algorithm.
-        // First, every time onMouseMove() fires we turn off watching for
-        //   'mousemove' events and set this timer fuction (see below).
-        // When this timer function fires we turn the watch for 'mousemove'
-        //   events back on. So for 50ms the 'mousemove' events were ignored.
-        function throttleTimerFn() {
-          self.$dom.on('mousemove', onMouseMove)
-          // IF the the hideBothTimerFn has already been set
-          // OR this is the first in a sequence of 'mousemove' events
-          if (ms.hideBothTimerId || ms.firstThrottleTimerExecuted) {
-            clearTimeout(ms.hideBothTimerId)
-            ms.firstThrottleTimerExecuted = false
-            ms.hideBothTimerId = setTimeout(hideBothTimerFn, 2000)
-          }
-        }
-
-        // mouse moved -> disable on 'mousemove' events; throttling
-        self.$dom.off('mousemove', onMouseMove)
+      var throttledOnMouseMove = _.throttle(function(e) {
+        //console.log('throttledOnMouseMove: called.')
+        var globalVideoControls = self.videoApp.globalVideoControls
 
         // mouse moved -> show controls
         if ( globalVideoControls.$dom.hasClass('hide') ) {
@@ -477,11 +428,10 @@
           self.$dom.removeClass('nocursor')
         }
 
-        // in 50ms (1/20th sec) reenable 'mousemove' events
-        setTimeout(throttleTimerFn, 50)
-      } //end: onMouseMove()
+        debouncedHideBoth()
+      }, 50)
 
-      this.$dom.on('mousemove', onMouseMove)
+      this.$dom.on('mousemove', throttledOnMouseMove)
 
       function onMouseEnter(e) {
         ms.overControls = true
@@ -489,10 +439,194 @@
       function onMouseLeave(e) {
         ms.overControls = false
       }
-      this.videoApp.globalVideoControls.$dom.on('mouseenter', onMouseEnter)
-      this.videoApp.globalVideoControls.$dom.on('mouseleave', onMouseLeave)
+      setTimeout(function() {
+        //NOTE:
+        // _setupMouseEvents called from _setupEvents
+        // _setupEvents called from VideoContents() constructor
+        // VideoContents() constructor called from VideoApp() constructor
+        // BEFORE videoApp.globalVideoControls is constructed.
+        // So we call these functions asynchronously  later.
+        self.videoApp.globalVideoControls.$dom.on('mouseenter', onMouseEnter)
+        self.videoApp.globalVideoControls.$dom.on('mouseleave', onMouseLeave)
+      })
 
     } //end: VideoContents___setupMouseEvents()
+
+  VideoContents.prototype.addVideoContent =
+    function VideoContents__addVideoContent(root, subdirs, file, initTime) {
+      'use strict';
+      var self = this //for embeded functions
+
+      /* Remove any video content that exists
+       *
+       * NOTE: *Multiple Videos*
+       * Eventually I'll guard this with a setting that allows multiple
+       * video streams to be open controled with one set of controls.
+       * The reason for watching multiple streams at the same time is to
+       * compare original versions versus extended versions and such.
+       */
+      while (this.contents.length) {
+        this.contents.pop().$dom.remove()
+      }
+
+      var globalVideoControls = this.videoApp.globalVideoControls
+      globalVideoControls.reset()
+
+      var vidNum = this.contents.length
+
+      var videoTitle = file.match(/^(.*)\.[^.]+$/)[1]
+      if (vidNum === 0) {
+        document.title += " "+videoTitle
+      }
+
+      var videoContent = new VideoContent(vidNum, root, subdirs, file,
+                                          initTime, this.videoApp)
+
+      this.contents.push(videoContent)
+      this.$dom.append(videoContent.$dom)
+
+      videoContent.on('playing', function() {
+        console.log('videoContent: vidNum=%d: emitted "playing" event', videoContent.vidNum)
+        self.contentPlaying(videoContent.vidNum)
+      })
+
+      videoContent.on('paused', function() {
+        console.log('videoContent: vidNum=%d: emitted "paused" event', videoContent.vidNum)
+        self.contentPaused(videoContent.vidNum)
+      })
+
+      videoContent.on('loadeddata', function(videoInfo) {
+        if (videoContent.vidNum === 0) {
+          globalVideoControls.setDuration(videoInfo.duration)
+        }
+      })
+
+      videoContent.on('muted', function(muted) {
+        if (videoContent.vidNum === 0) {
+          globalVideoControls.toggleMuted()
+        }
+      })
+
+      videoContent.on('canplay', function() {
+        if (videoContent.vidNum === 0) {
+          globalVideoControls.enable()
+        }
+        self.cssCenterSpinner()
+      })
+
+      videoContent.on('timeupdated', function(curTime) {
+        if (videoContent.vidNum === 0) {
+          this.videoApp.globalVideoControls.setPosition(curTime)
+        }
+      })
+
+      info() && console.log('VideoContents__addVideoContent: added new VideoContent')
+      info() && console.log('VideoContents__addVideoContent: calling out to "findtrack"')
+
+      function findtrackSuccess(data) {
+        info() && console.log('findtrackSuccess: data = %o', data)
+
+        var tracks = []
+        if ( data.tracks && _.isArray(data.tracks) &&
+             data.tracks.every(function(e) { return _.isPlainObject(e) }) ) {
+          info() && console.log('findTrackSuccess: tracks are mostly wellformed')
+          tracks = data.tracks
+        }
+        else {
+          warn() && console.log('findTrackSuccess: tracks are NOT wellformed')
+          return
+        }
+
+        warn() && console.log('VideoContents__addVideoContent: findtrackSuccess: tracks = %o', tracks)
+
+        info() && console.log('VideoContents__addVideoContent: tracks.length = %d', tracks.length)
+        var $newTrack
+        if (tracks.length) {
+          info() && console.log('VideoContents__addVideoContent: tracks.length non-zero adding the first one as the default')
+          //the first track is set as default
+          $newTrack = $( document.createElement('track') )
+                      .attr('default', true)
+                      .attr('kind', 'subtitles') //or 'captions'; can be omitted
+                      .attr('src', tracks[0].uri)
+                      .attr('srclang', tracks[0].lang)
+                      .attr('label', tracks[0].label)
+
+          videoContent.$video.append($newTrack)
+
+          for (var i=1; i<tracks.length; i+=1) {
+            info() && console.log('VideoContents__addVideoContent: adding track for i=%d', i)
+            $newTrack = $( document.createElement('track') )
+                        .attr('kind', 'subtitles') //or 'captions'; can be omitted
+                        .attr('src', tracks[i].uri)
+                        .attr('srclang', tracks[i].lang)
+                        .attr('label', tracks[i].label)
+
+            videoContent.$video.append($newTrack)
+          } //end: for
+        } //end: if
+      } //end: findtrackSuccess()
+      $.ajax({ url  : 'findtrack'
+             , type : 'GET'
+             , data : { root    : root
+                      , subdirs : subdirs
+                      , file    : file
+                      }
+             , success : findtrackSuccess
+             })
+
+    } //end: VideoContents__addVideoContent()
+
+  VideoContents.prototype.getState = function VideoContents__getState() {
+    var state = {}
+    for (var i=0; i<this.contents.length; i+=1) {
+      state['video-'+i] = this.contents[i].getState()
+    }
+    return state;
+  } //end: VideoContents__getState()
+
+  VideoContents.prototype.contentPlaying =
+    function VideoContents__contentPlaying(vidNum) {
+      var self = this
+      var playing
+      if (!this._eventCoalator.playing) {
+        this._eventCoalator.playing = { contents: {} }
+        //set timer
+        this._eventCoalator.playing.tid = setTimeout(function() {
+          delete self._eventCoalator.playing
+        }, 50)
+      }
+      playing = this._eventCoalator.playing
+      playing.contents[vidNum] = true //dedup multiple calls
+
+      if ( Object.keys(playing.contents).length === this.contents.length) {
+        //all playing
+        this.emit('allPlaying')
+        clearTimeout( this._eventCoalator.playing.tid )
+        delete this._eventCoalator.playing
+      }
+    }
+
+  VideoContents.prototype.contentPaused =
+    function VideoContents__contentPaused(vidNum) {
+      var self = this
+      var paused
+      if (!this._eventCoalator.paused) {
+        this._eventCoalator.paused = { contents: {} }
+        //set timer
+        this._eventCoalator.paused.tid = setTimeout(function() {
+          delete self._eventCoalator.paused
+        }, 50)
+      }
+      paused = this._eventCoalator.paused
+      paused.contents[vidNum] = true //dedup multiple calls
+
+      if ( Object.keys(paused.contents).length === this.contents.length) {
+        //all paused
+        this.emit('allPaused')
+        clearTimeout( this._eventCoalator.paused.tid )
+        delete this._eventCoalator.paused
+      }
+    }
 
   VideoContents.prototype.startBusy = function VideoContents__startBusy() {
     info() && console.log('VideoContents__startBusy:')
@@ -716,10 +850,11 @@
   VideoContents.prototype.setMark = function VideoContents__setMark() {
     if (!this.contents.length) return
 
-    var state = {}
-    for (var i=0; i<this.contents.length; i+=1) {
-      state['video-'+i] = _.cloneDeep(this.contents[i].state)
-    }
+    //var state = {}
+    //for (var i=0; i<this.contents.length; i+=1) {
+    //  state['video-'+i] = _.cloneDeep(this.contents[i].state)
+    //}
+    var state = this.getState()
     var qstr = $.param( state )
 
     var url = window.location.origin + window.location.pathname + "?" + qstr
@@ -838,6 +973,8 @@
     this._setupEvents()
   } //end: VideoContent()
 
+  inherits(VideoContent, EventEmitter)
+
   VideoContent.prototype.getState = function VideoContent__getState() {
     return _.cloneDeep(this.state)
   }
@@ -870,6 +1007,7 @@
 
       $video.on('loadeddata', function onLoadedData(e) {
         info() && console.log("onLoadedData: e.target.id=%s", e.target.id)
+        // NOTE:
         // 'loadeddata' means that the HTMLMediaElement has loaded enough
         // data to display one frame.
         //
@@ -887,22 +1025,20 @@
             , self.videoWidth, self.videoHeight)
 
         info() && console.log('onLoadedData: self.$video[0].duration = %f', self.$video[0].duration)
-        var globalVideoControls = self.videoApp.globalVideoControls
 
-        if (0 == self.vidNum) {
-          //if ( !globalVideoControls.isEnabled() ) globalVideoControls.enable()
-          globalVideoControls.$positionRng[0].max = self.$video[0].duration
-        }
+        self.emit('loadeddata', { duration : self.$video[0].duration
+                                , width    : self.$video[0].videoWidth
+                                , height   : self.$video[0].videoHeight
+                                })
 
         if (self.initialTime) {
           info && console.log('onLoadedData: self.initialTime = %f', self.initialTime)
-          if (0 == self.vidNum) globalVideoControls.setPosition(self.initialTime)
           self.setPosition(self.initialTime)
         }
 
       })
 
-      //HTMLMediaElement Constant
+      //NOTE: HTMLMediaElement Constant
       // eg. HTMLMediaElement.HAV_ENOUGH_DATA == 4
       // see: https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement
       var MEC = [ "HAVE_NOTHING"
@@ -920,20 +1056,24 @@
                              , self.$video[0].readyState
                              , self.canPlay)
 
-        var globalVideoControls = self.videoApp.globalVideoControls
-        if ( !globalVideoControls.isEnabled() ) globalVideoControls.enable()
-        globalVideoControls.cssPositionControls()
-        self.videoApp.videoContents.cssCenterSpinners()
+        self.emit('canplay')
+
+        //var globalVideoControls = self.videoApp.globalVideoControls
+        //if ( !globalVideoControls.isEnabled() ) globalVideoControls.enable()
+        //globalVideoControls.cssPositionControls()
+        //self.videoApp.videoContents.cssCenterSpinners()
       })
 
       $video.on('playing', function onPlaying(e){
         info() && console.log("onPlaying: e.target.id=%s", e.target.id)
-        self.playing()
+        //self.playing()
+        self.emit('playing')
       })
 
       $video.on('pause', function onPause(e){
         info() && console.log("onPause: e.target.id=%s", e.target.id)
-        self.paused()
+        //self.paused()
+        self.emit('paused')
       })
 
       $video.on('seeked', function onSeeked(e) {
@@ -952,10 +1092,11 @@
       })
 
       $video.on('timeupdate', function onTimeUpdate(e){
-        var globalVideoControls = self.videoApp.globalVideoControls
-        var videoContents = self.videoApp.videoContents
-        self.timeupdated(e.target.currentTime)
+        self.emit('timeupdated', e.target.currentTime)
 
+        //var globalVideoControls = self.videoApp.globalVideoControls
+        //var videoContents = self.videoApp.videoContents
+        //self.timeupdated(e.target.currentTime)
       })
 
       $video.on('ended', function onEnded(e){
@@ -974,15 +1115,15 @@
     info() && console.log('VideoContent__startBusy:')
     var globalVideoControls = this.videoApp.globalVideoControls
 
-    if (0 == this.vidNum) {
+    if (0 === this.vidNum) {
       //disable the controls
       globalVideoControls.disable()
     }
 
     //remove the hide class from the $spinner
     if ( this.$spinner.hasClass('hide') ) {
-      info() && console.log('VideoContent__startBusy: $spinner has "hide" class')
-      info() && console.log('VideoContent__startBusy: removing "hide" class to $spinner')
+      //info() && console.log('VideoContent__startBusy: $spinner has "hide" class')
+      //info() && console.log('VideoContent__startBusy: removing "hide" class to $spinner')
       this.$spinner.removeClass('hide')
     }
 
@@ -1014,6 +1155,8 @@
       info && console.log('VideoContent__playing: calling globalVideoControls.setPlaying()')
       this.videoApp.globalVideoControls.setPlaying()
     }
+
+    this.emit('playing')
   }
 
   VideoContent.prototype.paused = function VideoContent__paused() {
@@ -1022,40 +1165,24 @@
       info() && console.log('VideoContent__paused: calling globalVideoControls.setPaused()')
       this.videoApp.globalVideoControls.setPaused()
     }
+
+    this.emit('paused')
   }
 
-  VideoContent.prototype.timeupdated =
-    function VideoContent__timeupdated(curTime) {
-      //info() && console.log('VideoContent__timeupdated: this.vidNum = %d', this.vidNum)
-      if ( this.vidNum === 0 ) {
-        //info() && console.log('VideoContent__timeupdated: calling globalVideoControls.setPosition(%f)', curTime)
-        this.videoApp.globalVideoControls.setPosition(curTime)
-      }
-    } //end: VideoContent__timeupdated()
+  //VideoContent.prototype.timeupdated =
+  //  function VideoContent__timeupdated(curTime) {
+  //    //info() && console.log('VideoContent__timeupdated: this.vidNum = %d', this.vidNum)
+  //    if ( this.vidNum === 0 ) {
+  //      //info() && console.log('VideoContent__timeupdated: calling globalVideoControls.setPosition(%f)', curTime)
+  //      this.videoApp.globalVideoControls.setPosition(curTime)
+  //    }
+  //  } //end: VideoContent__timeupdated()
 
   VideoContent.prototype.ended = function VideoContent__ended() {
     if ( this.vidNum === 0 ) {
       this.videoApp.globalVideoControls.setEnded()
     }
   }
-
-  //VideoContent.prototype.resized = function VideoContent__resized(e) {
-  //  info() && console.log('VideoContent__resized: called e = %o', e)
-  //  var self = this
-  //
-  //  /* This is called only from the fullscreenchange event.
-  //   * For some reason that fires off before the new fullscreen element
-  //   * has its dimensions set. So, I have inserted this delayed function
-  //   * to set the positioning of the spinner and controls.
-  //   * 500ms seems to be enought most of the time on my MacBook Pro
-  //   * (early 2011) running Chrome.
-  //   */
-  //  setTimeout(function() {
-  //    self.cssCenterSpinner()
-  //  }, 500)
-  //
-  //  return true
-  //} //end: VideoContent__resized()
 
   VideoContent.prototype.cssCenterSpinner =
     function VideoContent__cssCenterSpinner() {
@@ -1118,6 +1245,7 @@
     else {
       this.$video[0].muted = false
     }
+    this.emit('muted', this.$video.muted)
     //console.log('VideoContent__toggleMute: end. this.$video[0].muted = %o', this.$video[0].muted)
     return true
   }
@@ -1201,8 +1329,10 @@
 
 
   function GlobalVideoControls(_cfg, videoApp) {
-    this.videoApp = videoApp
     var cfg = _.cloneDeep(_cfg) || {}
+    var self = this //for callbacks
+
+    this.videoApp = videoApp
     
     this.skipBackSecs = cfg.skipBackSecs || 10
     this.skipForwSecs = cfg.skipForwSecs || 30
@@ -1259,8 +1389,6 @@
                 .addClass('hide')
                 .append( this.$flexWrapper )
 
-    var self = this //for callbacks
-
     /* *************
      * Play Button *
      *************** */
@@ -1295,6 +1423,19 @@
 
     this.$flexWrapper.append( this.$play )
 
+    this.videoApp.videoContents.on('allPlaying', function() {
+      if ( self.$playSym.hasClass('fa-play') ) {
+        self.$playSym.removeClass('fa-play')
+        self.$playSym.addClass('fa-pause')
+      }
+    })
+
+    this.videoApp.videoContents.on('allPaused', function() {
+      if ( self.$playSym.hasClass('fa-pause') ) {
+        self.$playSym.removeClass('fa-pause')
+        self.$playSym.addClass('fa-play')
+      }
+    })
 
     /***************
      * Skip Button *
@@ -1398,23 +1539,23 @@
 
       videoContents.toggleMute()
 
-      if ( self.$volumeSym.hasClass('fa-volume-up') ||
-           self.$volumeSym.hasClass('fa-volume-down') ) {
-        self.$volumeSym.removeClass('fa-volume-up')
-        self.$volumeSym.removeClass('fa-volume-down')
-        self.$volumeSym.addClass('fa-volume-off')
-      }
-      else {
-        self.$volumeSym.removeClass('fa-volume-off')
-
-        if (videoContents.contents.length) {
-          videoEl = videoContents.contents[0].$video[0]
-          if (videoEl.volume < 0.5)
-            self.$volumeSym.addClass('fa-volume-down')
-          else
-            self.$volumeSym.addClass('fa-volume-up')
-        }
-      }
+      //if ( self.$volumeSym.hasClass('fa-volume-up') ||
+      //     self.$volumeSym.hasClass('fa-volume-down') ) {
+      //  self.$volumeSym.removeClass('fa-volume-up')
+      //  self.$volumeSym.removeClass('fa-volume-down')
+      //  self.$volumeSym.addClass('fa-volume-off')
+      //}
+      //else {
+      //  self.$volumeSym.removeClass('fa-volume-off')
+      //
+      //  if (videoContents.contents.length) {
+      //    videoEl = videoContents.contents[0].$video[0]
+      //    if (videoEl.volume < 0.5)
+      //      self.$volumeSym.addClass('fa-volume-down')
+      //    else
+      //      self.$volumeSym.addClass('fa-volume-up')
+      //  }
+      //}
     } //end: onVolumeSymClick()
 
     this.$volumeRng = $( document.createElement('input') )
@@ -1522,6 +1663,12 @@
       }
     }
 
+  GlobalVideoControls.prototype.setDuration =
+    function GlobalVideoControls__setDurations(duration) {
+      this.$positionRng[0].max = duration
+    }
+
+
   GlobalVideoControls.prototype.setPosition =
     function GlobalVideoControls__setPosition(fsecs) {
       //info() && console.log('GlobalVideoControls__setPosition: fsecs = %f', fsecs)
@@ -1573,6 +1720,31 @@
       $controls = $('#globalVideoControls')
       offset = ($dom.width()/2) - ($controls.width()/2)
       $controls.css({top: 10, left: offset})
+    }
+
+  GlobalVideoControls.prototype.toggleMuted =
+    function GlobalVideoControls__toggleMuted() {
+      var videoContents = this.videoApp.videoContents
+      var videoEl
+
+      if ( this.$volumeSym.hasClass('fa-volume-up')   ||
+           this.$volumeSym.hasClass('fa-volume-down')   ) {
+        this.$volumeSym.removeClass('fa-volume-up')
+        this.$volumeSym.removeClass('fa-volume-down')
+        this.$volumeSym.addClass('fa-volume-off')
+      }
+      else {
+        this.$volumeSym.removeClass('fa-volume-off')
+
+        if (videoContents.contents.length) {
+          videoEl = videoContents.contents[0].$video[0]
+          if (videoEl.volume < 0.5)
+            this.$volumeSym.addClass('fa-volume-down')
+          else
+            this.$volumeSym.addClass('fa-volume-up')
+        }
+      }
+
     }
 
   GlobalVideoControls.prototype.setVolume =
@@ -1719,6 +1891,9 @@
     this.onMuteBtnClick = function onMuteBtnClick(e) {
       console.log('onMuteBtnClick: called.')
       self.videoContent.toggleMute()
+    }
+
+    videoContent.on('muted', function(muted) {
       if (self.$muteSym.hasClass('fa-volume-up')) {
         self.$muteSym.removeClass('fa-volume-up')
         self.$muteSym.addClass('fa-volume-off')
@@ -1727,7 +1902,7 @@
         self.$muteSym.removeClass('fa-volume-off')
         self.$muteSym.addClass('fa-volume-up')
       }
-    }
+    })
 
     this.$skipTinyBtn = $( document.createElement('div') )
                         .attr('id', this.ids.skipTiny)
@@ -1851,7 +2026,7 @@
       this.$skipSmallBtn.on('click', this.onSkipSmallBtnClick)
       this.$skipBigBtn.on('click', this.onSkipBigBtnClick)
       this.$backTinyBtn.on('click', this.onBackTinyBtnClick)
-      this.$backSmallBtn.on('click', this.onBackSmalBtnClick)
+      this.$backSmallBtn.on('click', this.onBackSmallBtnClick)
       this.$backBigBtn.on('click', this.onBackBigBtnClick)
 
       this._enabled = true
@@ -1978,6 +2153,7 @@
     function FileBrowser___setupKeyboardEvents() {
       if (this._eventsSetup) return
 
+      // NOTE:
       // For an complete list of keyCode's see:
       // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode
 
