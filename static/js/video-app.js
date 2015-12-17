@@ -510,6 +510,7 @@
       videoContent.on('canplay', function() {
         if (videoContent.vidNum === 0) {
           globalVideoControls.enable()
+          globalVideoControls.cssPositionControls()
         }
         self.cssCenterSpinner()
       })
