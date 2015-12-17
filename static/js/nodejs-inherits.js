@@ -1,0 +1,1 @@
+../../bower_components/nodejs-inherits/index.js

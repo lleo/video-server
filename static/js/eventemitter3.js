@@ -1,0 +1,1 @@
+../../bower_components/eventemitter3/index.js
