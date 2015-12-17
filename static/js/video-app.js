@@ -548,7 +548,7 @@
           $newTrack = $( document.createElement('track') )
                       .attr('default', true)
                       .attr('kind', 'subtitles') //or 'captions'; can be omitted
-                      .attr('src', tracks[0].uri)
+                      .attr('src', tracks[0].url)
                       .attr('srclang', tracks[0].lang)
                       .attr('label', tracks[0].label)
 
@@ -558,7 +558,7 @@
             info() && console.log('VideoContents__addVideoContent: adding track for i=%d', i)
             $newTrack = $( document.createElement('track') )
                         .attr('kind', 'subtitles') //or 'captions'; can be omitted
-                        .attr('src', tracks[i].uri)
+                        .attr('src', tracks[i].url)
                         .attr('srclang', tracks[i].lang)
                         .attr('label', tracks[i].label)
 
@@ -916,8 +916,8 @@
     parts = parts.concat(subdirs)
     parts.push(file)
 
-    var rawUri = parts.join('/')
-    var uri = encodeURI(rawUri)
+    var rawUrl = parts.join('/')
+    var url = encodeURI(rawUrl)
 
     var mimetype = determineMimetype(file)
     if (!mimetype) {
@@ -926,7 +926,7 @@
     }
 
     var $source = $( document.createElement('source') )
-                  .attr('src', uri)
+                  .attr('src', url)
                   .attr('type', mimetype)
 
     this.$source = $source

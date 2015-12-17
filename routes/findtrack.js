@@ -86,8 +86,8 @@ function videoParse(videofn) {
 }
 
 function sortFn(a,b) {
-  var aExt = path.extname(a.uri).slice(1)
-  var bExt = path.extname(b.uri).slice(1)
+  var aExt = path.extname(a.url).slice(1)
+  var bExt = path.extname(b.url).slice(1)
   if (aExt == 'vtt' && bExt == 'srt') return -1
   if (aExt == 'srt' && bExt == 'vtt') return 1
   return 0
@@ -189,9 +189,9 @@ module.exports = function findtrack(req, res, next) {
         parts = parts.concat(subdirs)
         parts.push(trackfn)
 
-        var uri = path.join.apply(path, parts)
+        var url = path.join.apply(path, parts)
 
-        tracks.push({ uri: uri, label: trk.desc, lang: trk.lang })
+        tracks.push({ url: url, label: trk.desc, lang: trk.lang })
       }
       //else
       //  console.log('%s: the files DID NOT match', MODNAME)
