@@ -30,13 +30,16 @@ html
     script(src="/js/jquery.js", type="text/javascript")
     script(src="/js/lodash.js", type="text/javascript")
 
+    script(src="/js/nodejs-inherits.js", type="text/javascript")
+    script(src="/js/eventemitter3.js", type="text/javascript")
+
     - var cfg_json_str = JSON.stringify(cfg)
 
     script(src="/js/video-app.js", type="text/javascript")
     script.
       $(document).ready(function(){
         console.log("What WAS the VIDEO_APP.init() function:")
-        var videoApp = new VideoApp(!{cfg_json_str})
+        window.videoApp = new VideoApp(!{cfg_json_str})
         $('#fileSelect').append( videoApp.fileBrowser.$dom )
         $('#videoStuff').append( videoApp.videoContents.$dom )
         videoApp.fileBrowser.$rootSelect.focus()
