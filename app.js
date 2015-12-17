@@ -58,7 +58,7 @@ app.set('app config orig', orig_cfg)
 /*
  *  Restructure the Config Data from a list into a Hash lookup by Root name
  */
-function isInteger(n) { return u.isNumber(n) ? n%1==0 : false }
+function isInteger(n) { return u.isNumber(n) ? n%1===0 : false }
 
 var cfg = {}
 
@@ -87,16 +87,16 @@ app.set('app config by name', cfg)
 app.use(favicon(path.join(__dirname, 'static', 'img', 'favicon.ico')))
 
 function pad2(n) {
-  var len = (''+n).length
-  if ((''+n).length == 1)
+  var len = n.toString().length
+  if (len === 1)
     return '0'+n
   return n
 }
 function pad3(n) {
-  var len = (''+n).length
-  if (len == 1)
+  var len = n.toString().length
+  if (len === 1)
     return '00'+n
-  if (len == 2)
+  if (len === 2)
     return '0'+n
   return n
 }
