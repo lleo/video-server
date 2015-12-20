@@ -512,7 +512,7 @@
           globalVideoControls.enable()
           globalVideoControls.cssPositionControls()
         }
-        self.cssCenterSpinner()
+        videoContent.cssCenterSpinner()
       })
 
       videoContent.on('timeupdated', function(curTime) {
@@ -912,12 +912,18 @@
     /*
      * Create the video DOM element. Start with the SourceElement first
      */
-    var parts = ['/stream', root]
-    parts = parts.concat(subdirs)
-    parts.push(file)
+    //var parts = ['/stream', root]
+    //parts = parts.concat(subdirs)
+    //parts.push(file)
+    //
+    //var rawUrl = parts.join('/')
+    //var url = encodeURI(rawUrl)
 
-    var rawUrl = parts.join('/')
-    var url = encodeURI(rawUrl)
+    var qstr = $.param({ root    : this.root
+                       , subdirs : this.subdirs
+                       , file    : this.file
+                       })
+    var url = '/stream?'+qstr
 
     var mimetype = determineMimetype(file)
     if (!mimetype) {

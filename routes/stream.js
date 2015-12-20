@@ -2,6 +2,7 @@
 var fs = require('fs')
   , path = require('path')
   , util = require('util')
+  , u = require('lodash')
 
 const MODNAME = path.parse(module.filename).name
 
@@ -19,13 +20,47 @@ function streamVideo(req, res, next) {
   'use strict';
   var app = res.app
 
-  var p = decodeURI(req.path).split('/')
-  var root = p[2]
-  var subdirs = p.slice(3,p.length-1)
-  var file = p[p.length-1]
-  //console.log('%s: root = %j', MODNAME, root)
-  //console.log('%s: subdirs = %j', MODNAME, subdirs)
-  //console.log('%s: file = %j', MODNAME, file)
+  //NOTE: old non-query string version
+  //var p = decodeURI(req.path).split('/')
+  //var root = p[2]
+  //var subdirs = p.slice(3,p.length-1)
+  //var file = p[p.length-1]
+
+  function bail(errstr) {
+    console.error('%s: %s', MODNAME, errstr)
+    next()
+  }
+
+  if (!u.isObject(req.query)) {
+    bail(util.format('req.query is not an object req.query = %j', req.query))
+    return;
+  }
+  if ( !u.has(req.query, 'root') ||
+       !u.isString(req.query.root) ||
+       req.query.root.length === 0 ) {
+    bail(util.format('req.query.root = %j', req.query.root))
+    return
+  }
+  if ( !u.has(req.query, 'subdirs') ||
+       !u.isArray(req.query.subdirs) ||
+       req.query.subdirs.lenth === 0 ) {
+    bail(util.format('req.query.subdirs = %j', req.query.subdirs))
+    return
+  }
+  if ( !u.has(req.query, 'file') ||
+       !u.isString(req.query.file) ||
+       req.query.file.length === 0 ) {
+    bail(util.format('req.query.file = %j', req.query.file))
+    return
+  }
+
+  var root = req.query.root
+  var subdirs = req.query.subdirs
+  var file = req.query.file
+
+  console.log('%s: root = %j', MODNAME, root)
+  console.log('%s: subdirs = %j', MODNAME, subdirs)
+  console.log('%s: file = %j', MODNAME, file)
 
   // See routes/index.js for how I came up with this rx
   var rx = /(?:\/\.\.(?![^\/])|^\.\.(?![^\/])|^\.\.$)/;

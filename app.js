@@ -129,8 +129,9 @@ app.get('/readdir', readdir)
 app.get('/findtrack', findtrack)
 
 //var stream_rx = /^\/stream\/([^\/]+)((?:\/[^\/]+(?:\/[^\/]+)*)?)\/([^\/]+)$/;
-var stream_rx = /^\/stream\//;
-app.get(stream_rx, stream)
+//var stream_rx = /^\/stream\//;
+//app.get(stream_rx, stream)
+app.get('/stream', stream)
 
 var track_rx = /^\/track\//;
 app.get(track_rx, track)
