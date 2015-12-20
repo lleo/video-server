@@ -141,10 +141,10 @@ module.exports = function findtrack(req, res, next) {
 
   //console.log('%s: root_fqdn = %j', MODNAME, root_fqdn)
 
-  var parts = [root_fqdn]
-  parts = parts.concat(subdirs)
+  var video_dir_parts = [root_fqdn]
+  video_dir_parts = video_dir_parts.concat(subdirs)
   
-  var fqdn = path.join.apply(path, parts)
+  var fqdn = path.join.apply(path, video_dir_parts)
 
   //console.log('%s: fqdn = %j', MODNAME, fqdn)
 
@@ -185,11 +185,11 @@ module.exports = function findtrack(req, res, next) {
         //console.log('%s: the files matched', MODNAME)
         //console.log('%s: trk = %j', MODNAME, trk)
 
-        parts = ['/track', root]
-        parts = parts.concat(subdirs)
-        parts.push(trackfn)
+        var track_url_parts = ['/track', root]
+        track_url_parts = track_url_parts.concat(subdirs)
+        track_url_parts.push(trackfn)
 
-        var url = path.join.apply(path, parts)
+        var url = path.join.apply(path, track_url_parts)
 
         tracks.push({ url: url, label: trk.desc, lang: trk.lang })
       }
