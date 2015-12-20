@@ -56,11 +56,11 @@ function streamVideo(req, res, next) {
   var app_cfg = app.get('app config by name')
   var root_fqdn = app_cfg['video roots'][root].fqdn
 
-  var parts = [root_fqdn]
-  parts = parts.concat(subdirs)
-  parts.push(file)
+  var video_parts = [root_fqdn]
+  video_parts = video_parts.concat(subdirs)
+  video_parts.push(file)
   
-  var video_fqfn = path.join.apply(path, parts)
+  var video_fqfn = path.join.apply(path, video_parts)
   //console.log("%s: video_fqfn=%s", MODNAME, video_fqfn)
 
   var ext = path.extname(video_fqfn).toLowerCase().replace(/^\./, '')
@@ -84,11 +84,11 @@ function streamVideo(req, res, next) {
 
   if ( req.headers['range'] ) {
     var range = req.headers.range
-      , parts = range.replace('bytes=', "").split("-")
-      , partialstart = parts[0]
-      , partialend = parts[1]
-      , start = parseInt(partialstart, 10)
-      , end = partialend ? parseInt(partialend, 10) : total-1
+      , range_parts = range.replace('bytes=', "").split("-")
+      , range_start = range_parts[0]
+      , range_end = range_parts[1]
+      , start = parseInt(range_start, 10)
+      , end = range_end ? parseInt(range_end, 10) : total-1
       , chunksize = (end-start)+1
 
     console.log('%s: RANGE: %d - %d = %d', MODNAME, end, start, chunksize)
