@@ -133,8 +133,9 @@ app.get('/findtrack', findtrack)
 //app.get(stream_rx, stream)
 app.get('/stream', stream)
 
-var track_rx = /^\/track\//;
-app.get(track_rx, track)
+//var track_rx = /^\/track\//;
+//app.get(track_rx, track)
+app.get('/track', track)
 
 // error handlers
 

@@ -7,6 +7,7 @@ var util = require('util')
 var fs = require('fs')
 var path = require('path')
 var u = require('lodash')
+var qs = require('qs')
 
 var Promise = require('bluebird')
 var join = Promise.join
@@ -183,14 +184,18 @@ module.exports = function findtrack(req, res, next) {
       
       if ( vid.base == trk.base ) {
         //console.log('%s: the files matched', MODNAME)
-        //console.log('%s: trk = %j', MODNAME, trk)
+        console.log('%s: trk = %j', MODNAME, trk)
 
-        var track_url_parts = ['/track', root]
-        track_url_parts = track_url_parts.concat(subdirs)
-        track_url_parts.push(trackfn)
+        //var track_url_parts = ['/track', root]
+        //track_url_parts = track_url_parts.concat(subdirs)
+        //track_url_parts.push(trackfn)
+        //var url = path.join.apply(path, track_url_parts)
 
-        var url = path.join.apply(path, track_url_parts)
-
+        var qstr = qs.stringify({ root    : root
+                                , subdirs : subdirs
+                                , file    : trackfn
+                                })
+        var url = '/track?'+qstr
         tracks.push({ url: url, label: trk.desc, lang: trk.lang })
       }
       //else
